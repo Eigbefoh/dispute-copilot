@@ -1,0 +1,56 @@
+{
+  "policy_id": "mastercard-4855-take-home-v2",
+  "scheme": "mastercard",
+  "reason_code": "4855",
+  "rulebook_version": "take-home-v2",
+  "requirements": [
+    {
+      "requirement_id": "MC4855-R1",
+      "description": "Proof of delivery or service rendered",
+      "required_facts": [
+        "carrier_reported_tracking_number",
+        "shipping_record_carrier_name",
+        "carrier_reported_delivery_status",
+        "service_record_reported_completion_status"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v2",
+        "page": 4,
+        "start_line_id": "P004-L018",
+        "end_line_id": "P004-L018",
+        "exact_quote": "1. Proof of delivery (tracking + carrier confirmation) or proof of service rendered (access logs, attendance, completed booking)"
+      }
+    },
+    {
+      "requirement_id": "MC4855-R2",
+      "description": "Delivery or service occurred before chargeback",
+      "required_facts": [
+        "carrier_reported_delivery_date",
+        "service_record_reported_completion_date",
+        "chargeback_date"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v2",
+        "page": 4,
+        "start_line_id": "P004-L019",
+        "end_line_id": "P004-L019",
+        "exact_quote": "2. Date of delivery / service is before the chargeback date"
+      }
+    },
+    {
+      "requirement_id": "MC4855-R3",
+      "description": "Delivery address matches cardholder records",
+      "required_facts": [
+        "carrier_reported_delivery_address",
+        "case_recorded_billing_postcode"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v2",
+        "page": 4,
+        "start_line_id": "P004-L020",
+        "end_line_id": "P004-L020",
+        "exact_quote": "3. Delivery address matches the cardholder's records"
+      }
+    }
+  ]
+}

@@ -1,0 +1,38 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "dispute-copilot"
+version = "0.1.0"
+description = "A traceable payment-dispute evaluation pipeline."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "Proprietary" }
+authors = [
+    { name = "Dispute Copilot contributors" },
+]
+dependencies = [
+    "openai>=1.70,<3",
+    "Pillow>=11,<13",
+    "pydantic>=2.7,<3",
+    "pypdf>=6,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0",
+]
+
+[project.scripts]
+dispute-copilot = "dispute_copilot.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/dispute_copilot"]
+
+[tool.pytest.ini_options]
+addopts = "-ra"
+testpaths = ["tests"]
+markers = [
+    "integration: tests that call an external model and require explicit configuration",
+]

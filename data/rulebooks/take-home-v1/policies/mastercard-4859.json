@@ -1,0 +1,68 @@
+{
+  "policy_id": "mastercard-4859-take-home-v1",
+  "scheme": "mastercard",
+  "reason_code": "4859",
+  "rulebook_version": "take-home-v1",
+  "requirements": [
+    {
+      "requirement_id": "MC4859-R1",
+      "description": "Original reservation or booking",
+      "required_facts": [
+        "reservation_or_booking"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v1",
+        "page": 5,
+        "start_line_id": "P005-L011",
+        "end_line_id": "P005-L011",
+        "exact_quote": "1. Evidence of the cardholder's original reservation or booking"
+      }
+    },
+    {
+      "requirement_id": "MC4859-R2",
+      "description": "No-show or cancellation policy disclosed at booking",
+      "required_facts": [
+        "no_show_or_cancellation_policy",
+        "policy_disclosure_at_booking"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v1",
+        "page": 5,
+        "start_line_id": "P005-L012",
+        "end_line_id": "P005-L012",
+        "exact_quote": "2. The merchant's no-show / cancellation policy as disclosed at booking"
+      }
+    },
+    {
+      "requirement_id": "MC4859-R3",
+      "description": "No-show or late cancellation evidence",
+      "required_facts": [
+        "attendance_or_cancellation_record",
+        "policy_window"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v1",
+        "page": 5,
+        "start_line_id": "P005-L013",
+        "end_line_id": "P005-L013",
+        "exact_quote": "3. Evidence the cardholder either failed to show or cancelled outside the policy window"
+      }
+    },
+    {
+      "requirement_id": "MC4859-R4",
+      "description": "Charged fee matches the disclosed policy",
+      "required_facts": [
+        "charged_fee",
+        "policy_fee"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v1",
+        "page": 5,
+        "start_line_id": "P005-L014",
+        "end_line_id": "P005-L014",
+        "exact_quote": "4. Evidence the fee charged matches the policy disclosed"
+      }
+    }
+  ]
+}
+

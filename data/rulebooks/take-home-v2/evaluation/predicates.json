@@ -1,0 +1,593 @@
+{
+  "rulebook_version": "take-home-v2",
+  "predicate_schema_version": "requirement-predicates/0.1.0",
+  "policies": [
+    {
+      "policy_id": "mastercard-4837-take-home-v2",
+      "requirements": [
+        {
+          "requirement_id": "MC4837-R1",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_equals",
+                "fact_name": "avs_result",
+                "value_match": "ANY",
+                "expected_value": "Y"
+              },
+              {
+                "operator": "fact_equals",
+                "fact_name": "cvv_result",
+                "value_match": "ANY",
+                "expected_value": "M"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "MC4837-R2",
+          "predicate": {
+            "operator": "fact_in",
+            "fact_name": "three_ds_status",
+            "expected_values": [
+              "authenticated"
+            ],
+            "value_match": "ANY"
+          }
+        },
+        {
+          "requirement_id": "MC4837-R3",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "numeric_at_least",
+                "fact_name": "merchant_recorded_prior_undisputed_transaction_count",
+                "numeric_bound": 2
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_prior_transaction_date"
+              },
+              {
+                "operator": "fact_equals",
+                "fact_name": "merchant_recorded_prior_billing_postcode",
+                "value_match": "ALL",
+                "other_fact_name": "case_recorded_billing_postcode"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "MC4837-R4",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_equals",
+                "fact_name": "carrier_reported_delivery_address",
+                "value_match": "ANY",
+                "other_fact_name": "case_recorded_billing_postcode"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "carrier_reported_signature_name"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "policy_id": "mastercard-4855-take-home-v2",
+      "requirements": [
+        {
+          "requirement_id": "MC4855-R1",
+          "predicate": {
+            "operator": "any_of",
+            "predicates": [
+              {
+                "operator": "all_of",
+                "predicates": [
+                  {
+                    "operator": "fact_is_found",
+                    "fact_name": "carrier_reported_tracking_number"
+                  },
+                  {
+                    "operator": "fact_is_found",
+                    "fact_name": "shipping_record_carrier_name"
+                  },
+                  {
+                    "operator": "fact_in",
+                    "fact_name": "carrier_reported_delivery_status",
+                    "expected_values": [
+                      "delivered",
+                      "DELIVERED"
+                    ],
+                    "value_match": "ANY"
+                  }
+                ]
+              },
+              {
+                "operator": "fact_in",
+                "fact_name": "service_record_reported_completion_status",
+                "expected_values": [
+                  "completed",
+                  "COMPLETED",
+                  "rendered"
+                ],
+                "value_match": "ANY"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "MC4855-R2",
+          "predicate": {
+            "operator": "any_of",
+            "predicates": [
+              {
+                "operator": "date_on_or_before",
+                "fact_name": "carrier_reported_delivery_date",
+                "other_fact_name": "chargeback_date"
+              },
+              {
+                "operator": "date_on_or_before",
+                "fact_name": "service_record_reported_completion_date",
+                "other_fact_name": "chargeback_date"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "MC4855-R3",
+          "predicate": {
+            "operator": "fact_equals",
+            "fact_name": "carrier_reported_delivery_address",
+            "value_match": "ANY",
+            "other_fact_name": "case_recorded_billing_postcode"
+          }
+        }
+      ]
+    },
+    {
+      "policy_id": "mastercard-4859-take-home-v2",
+      "requirements": [
+        {
+          "requirement_id": "MC4859-R1",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "booking_record_reported_reservation_id"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "booking_record_reported_booking_date"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "booking_record_reported_service_date"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "MC4859-R2",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_cancellation_policy"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_policy_disclosure_date"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_policy_disclosure_channel"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "MC4859-R3",
+          "predicate": {
+            "operator": "any_of",
+            "predicates": [
+              {
+                "operator": "fact_in",
+                "fact_name": "booking_record_reported_attendance_status",
+                "expected_values": [
+                  "no-show",
+                  "NO_SHOW",
+                  "no_show"
+                ],
+                "value_match": "ANY"
+              },
+              {
+                "operator": "all_of",
+                "predicates": [
+                  {
+                    "operator": "fact_is_found",
+                    "fact_name": "booking_record_reported_cancellation_date"
+                  },
+                  {
+                    "operator": "numeric_at_least",
+                    "fact_name": "merchant_stated_cancellation_window_hours",
+                    "numeric_bound": 0
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "MC4859-R4",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_equals",
+                "fact_name": "merchant_recorded_charged_fee_amount",
+                "value_match": "ANY",
+                "other_fact_name": "merchant_stated_policy_fee_amount"
+              },
+              {
+                "operator": "fact_equals",
+                "fact_name": "merchant_recorded_charged_fee_currency",
+                "value_match": "ANY",
+                "other_fact_name": "merchant_stated_policy_fee_currency"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "policy_id": "visa-10.5-take-home-v2",
+      "requirements": [
+        {
+          "requirement_id": "V10.5-R1",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "case_recorded_reason_code"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "case_recorded_reason_code_label"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_transaction_classification"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_fraud_program_indicator"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "policy_id": "visa-12.6.1-take-home-v2",
+      "requirements": [
+        {
+          "requirement_id": "V12.6.1-R1",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_first_purchase_id"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_second_purchase_id"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_first_purchase_description"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_second_purchase_description"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V12.6.1-R2",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_first_purchase_document_id"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_second_purchase_document_id"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_first_fulfilment_date"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_second_fulfilment_date"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V12.6.1-R3",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_first_transaction_timestamp"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_first_authorisation_code"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_second_transaction_timestamp"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_second_authorisation_code"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "policy_id": "visa-13.1-take-home-v2",
+      "requirements": [
+        {
+          "requirement_id": "V13.1-R1",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "carrier_reported_tracking_number"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "shipping_record_carrier_name"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "carrier_reported_delivery_status"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "carrier_reported_delivery_address"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V13.1-R2",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_in",
+                "fact_name": "service_record_reported_completion_status",
+                "expected_values": [
+                  "completed",
+                  "COMPLETED",
+                  "rendered"
+                ],
+                "value_match": "ANY"
+              },
+              {
+                "operator": "date_on_or_before",
+                "fact_name": "service_record_reported_completion_date",
+                "other_fact_name": "merchant_stated_expected_service_date"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V13.1-R3",
+          "predicate": {
+            "operator": "any_of",
+            "predicates": [
+              {
+                "operator": "date_on_or_before",
+                "fact_name": "carrier_reported_delivery_date",
+                "other_fact_name": "chargeback_date"
+              },
+              {
+                "operator": "date_on_or_before",
+                "fact_name": "service_record_reported_completion_date",
+                "other_fact_name": "chargeback_date"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V13.1-R4",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "carrier_reported_delivery_address"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "case_recorded_shipping_postcode"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "policy_id": "visa-13.2-take-home-v2",
+      "requirements": [
+        {
+          "requirement_id": "V13.2-R1",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_recurring_billing_terms"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_cancellation_method"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V13.2-R2",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_reported_notification_content"
+              },
+              {
+                "operator": "date_on_or_before",
+                "fact_name": "merchant_reported_notification_date",
+                "other_fact_name": "transaction_date"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_reported_notification_channel"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V13.2-R3",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_reported_cancellation_search_scope"
+              },
+              {
+                "operator": "fact_equals",
+                "fact_name": "merchant_reported_cancellation_request_count",
+                "value_match": "ANY",
+                "expected_value": 0
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "transaction_date"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V13.2-R4",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_recurring_opt_in_date"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_recurring_opt_in_method"
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "policy_id": "visa-13.3-take-home-v2",
+      "requirements": [
+        {
+          "requirement_id": "V13.3-R1",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_product_description"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V13.3-R2",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "image_observed_item_colour"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "image_observed_item_type"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "image_observed_visible_damage"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "image_observed_serial_number"
+              }
+            ]
+          }
+        },
+        {
+          "requirement_id": "V13.3-R3",
+          "predicate": {
+            "operator": "all_of",
+            "predicates": [
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_return_method"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_stated_return_window_days"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_return_request_date"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_post_complaint_usage_date"
+              },
+              {
+                "operator": "fact_is_found",
+                "fact_name": "merchant_recorded_merchandise_retention_status"
+              }
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

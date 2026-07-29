@@ -1,0 +1,59 @@
+{
+  "policy_id": "visa-12.6.1-take-home-v2",
+  "scheme": "visa",
+  "reason_code": "12.6.1",
+  "rulebook_version": "take-home-v2",
+  "requirements": [
+    {
+      "requirement_id": "V12.6.1-R1",
+      "description": "Evidence of two distinct purchases",
+      "required_facts": [
+        "merchant_recorded_first_purchase_id",
+        "merchant_recorded_second_purchase_id",
+        "merchant_stated_first_purchase_description",
+        "merchant_stated_second_purchase_description"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v2",
+        "page": 2,
+        "start_line_id": "P002-L008",
+        "end_line_id": "P002-L008",
+        "exact_quote": "1. Evidence the two transactions are for two separate purchases (e.g. different order IDs, different items, different services rendered)"
+      }
+    },
+    {
+      "requirement_id": "V12.6.1-R2",
+      "description": "Separate documentation for each purchase event",
+      "required_facts": [
+        "merchant_recorded_first_purchase_document_id",
+        "merchant_recorded_second_purchase_document_id",
+        "merchant_recorded_first_fulfilment_date",
+        "merchant_recorded_second_fulfilment_date"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v2",
+        "page": 2,
+        "start_line_id": "P002-L009",
+        "end_line_id": "P002-L009",
+        "exact_quote": "2. Documentation of each purchase event (separate invoices, separate delivery confirmations, separate service dates)"
+      }
+    },
+    {
+      "requirement_id": "V12.6.1-R3",
+      "description": "Timestamps and authorisation codes for both charges",
+      "required_facts": [
+        "merchant_recorded_first_transaction_timestamp",
+        "merchant_recorded_first_authorisation_code",
+        "merchant_recorded_second_transaction_timestamp",
+        "merchant_recorded_second_authorisation_code"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v2",
+        "page": 2,
+        "start_line_id": "P002-L010",
+        "end_line_id": "P002-L010",
+        "exact_quote": "3. Transaction timestamps and authorisation codes for each charge"
+      }
+    }
+  ]
+}

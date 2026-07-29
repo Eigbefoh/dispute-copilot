@@ -1,0 +1,56 @@
+{
+  "presentation_rules_key": "analyst-review-package-v1",
+  "presentation_rules_version": "1.0.0",
+  "presentation_schema_version": "1.0.0",
+  "recommendation_display_labels": {
+    "RECOMMEND_REPRESENT": "Recommend representment",
+    "RECOMMEND_DO_NOT_REPRESENT": "Recommend not representing",
+    "INSUFFICIENT_EVIDENCE_TO_REPRESENT": "Insufficient evidence to recommend representment"
+  },
+  "evidence_gap_display_labels": {
+    "image_observed_visible_damage": "visible condition evidence",
+    "image_observed_serial_number": "serial number or product-identity evidence",
+    "merchant_recorded_return_request_date": "recorded return-request date",
+    "merchant_recorded_post_complaint_usage_date": "recorded post-complaint usage date",
+    "merchant_recorded_merchandise_retention_status": "recorded merchandise-retention status"
+  },
+  "rationale_templates": [
+    {
+      "recommendation": "RECOMMEND_REPRESENT",
+      "template_key": "all_mandatory_requirements_satisfied_v1",
+      "template_version": "1.0.0",
+      "sentences": [
+        "The available evidence satisfies all mandatory requirements under {policy_display_name}.",
+        "The supporting facts and source references are listed against each requirement below.",
+        "The system therefore recommends representment, subject to analyst review."
+      ]
+    },
+    {
+      "recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+      "template_key": "mandatory_requirement_not_satisfied_v1",
+      "template_version": "1.0.0",
+      "sentences": [
+        "The available evidence does not satisfy {causal_requirement_list} under {policy_display_name}.",
+        "The requirement checklist below shows the facts and sources supporting that result.",
+        "The system therefore recommends not representing, subject to analyst review."
+      ]
+    },
+    {
+      "recommendation": "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+      "template_key": "mandatory_requirement_not_established_v1",
+      "template_version": "1.0.0",
+      "sentences": [
+        "The available evidence establishes {satisfied_requirement_summary}.",
+        "However, {causal_requirement_list} remain not established because the listed facts are unresolved.",
+        "The system therefore finds insufficient evidence to recommend representment, subject to analyst review."
+      ]
+    }
+  ],
+  "limitations": [
+    "The recommendation is advisory and has not been reviewed by an analyst.",
+    "Visual-model observations are not independently verified visual truths.",
+    "NOT_ESTABLISHED means the current evidence did not establish the requirement; it does not prove the opposite.",
+    "The package does not submit, accept liability or contact any external party."
+  ],
+  "integrity_hash": "8e4bdedcae438763ee0b910d2999635464f1b0398db6fbbd21d8983e2a73a223"
+}

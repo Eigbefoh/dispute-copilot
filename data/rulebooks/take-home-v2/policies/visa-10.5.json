@@ -1,0 +1,25 @@
+{
+  "policy_id": "visa-10.5-take-home-v2",
+  "scheme": "visa",
+  "reason_code": "10.5",
+  "rulebook_version": "take-home-v2",
+  "requirements": [
+    {
+      "requirement_id": "V10.5-R1",
+      "description": "Evidence that the issuer miscoded the transaction",
+      "required_facts": [
+        "case_recorded_reason_code",
+        "case_recorded_reason_code_label",
+        "merchant_recorded_transaction_classification",
+        "merchant_recorded_fraud_program_indicator"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v2",
+        "page": 1,
+        "start_line_id": "P001-L013",
+        "end_line_id": "P001-L013",
+        "exact_quote": "Issuer claim: Transaction flagged under Visa's fraud monitoring program. Note: This reason code generally cannot be represented. Recommend accept_liability unless the merchant can prove the transaction was miscoded by the issuer."
+      }
+    }
+  ]
+}

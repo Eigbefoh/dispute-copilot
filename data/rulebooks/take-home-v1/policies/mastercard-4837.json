@@ -1,0 +1,70 @@
+{
+  "policy_id": "mastercard-4837-take-home-v1",
+  "scheme": "mastercard",
+  "reason_code": "4837",
+  "rulebook_version": "take-home-v1",
+  "requirements": [
+    {
+      "requirement_id": "MC4837-R1",
+      "description": "Full AVS and CVV match",
+      "required_facts": [
+        "avs_result",
+        "cvv_result"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v1",
+        "page": 4,
+        "start_line_id": "P004-L005",
+        "end_line_id": "P004-L005",
+        "exact_quote": "1. AVS match (full address) AND CVV match on the disputed transaction"
+      }
+    },
+    {
+      "requirement_id": "MC4837-R2",
+      "description": "Successful 3D Secure authentication",
+      "required_facts": [
+        "three_ds_status"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v1",
+        "page": 4,
+        "start_line_id": "P004-L006",
+        "end_line_id": "P004-L006",
+        "exact_quote": "2. 3D Secure authentication completed successfully (Mastercard SecureCode / Identity Check)"
+      }
+    },
+    {
+      "requirement_id": "MC4837-R3",
+      "description": "Two matching prior undisputed transactions",
+      "required_facts": [
+        "prior_undisputed_transaction_count",
+        "prior_transaction_dates",
+        "prior_billing_details_match"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v1",
+        "page": 4,
+        "start_line_id": "P004-L007",
+        "end_line_id": "P004-L007",
+        "exact_quote": "3. Two prior undisputed transactions from the same cardholder with this merchant in the past 12 months, with matching billing details"
+      }
+    },
+    {
+      "requirement_id": "MC4837-R4",
+      "description": "Signed delivery to the cardholder billing address",
+      "required_facts": [
+        "delivery_address",
+        "cardholder_billing_address",
+        "signature_confirmation"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v1",
+        "page": 4,
+        "start_line_id": "P004-L008",
+        "end_line_id": "P004-L008",
+        "exact_quote": "4. Proof of delivery to the cardholder's billing address with signature"
+      }
+    }
+  ]
+}
+

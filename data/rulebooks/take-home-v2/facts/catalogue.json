@@ -1,0 +1,474 @@
+{
+  "rulebook_version": "take-home-v2",
+  "facts": [
+    {
+      "fact_name": "avs_result",
+      "description": "Address Verification Service result frozen in the disputed transaction metadata.",
+      "value_type": "STRING",
+      "source_type": "CASE_METADATA",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "booking_record_reported_attendance_status",
+      "description": "Attendance status asserted by the merchant booking or attendance record.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "booking_record_reported_booking_date",
+      "description": "Booking date asserted by the merchant reservation record.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "booking_record_reported_cancellation_date",
+      "description": "Cancellation date asserted by each merchant booking record.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "booking_record_reported_reservation_id",
+      "description": "Reservation identifier asserted by the merchant booking record.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "booking_record_reported_service_date",
+      "description": "Scheduled service date asserted by the merchant booking record.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "carrier_reported_delivery_address",
+      "description": "Delivery address asserted by the carrier record; this does not establish that delivery occurred at that address.",
+      "value_type": "ADDRESS",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "carrier_reported_delivery_date",
+      "description": "Delivery date asserted by the carrier record; this does not establish that delivery occurred.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "carrier_reported_delivery_status",
+      "description": "Delivery status asserted by the carrier record; this is a carrier claim rather than a policy conclusion.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "carrier_reported_signature_name",
+      "description": "Recipient or signatory name asserted by the carrier delivery record.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "carrier_reported_tracking_number",
+      "description": "Tracking identifier asserted by the carrier or shipping record.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "case_recorded_billing_postcode",
+      "description": "Billing postcode frozen in the disputed transaction metadata.",
+      "value_type": "STRING",
+      "source_type": "CASE_METADATA",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "case_recorded_reason_code",
+      "description": "Dispute reason code frozen in the immutable case snapshot.",
+      "value_type": "STRING",
+      "source_type": "CASE_METADATA",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "case_recorded_reason_code_label",
+      "description": "Dispute reason-code label frozen in the immutable case snapshot.",
+      "value_type": "STRING",
+      "source_type": "CASE_METADATA",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "case_recorded_shipping_postcode",
+      "description": "Shipping postcode frozen in the disputed transaction metadata.",
+      "value_type": "STRING",
+      "source_type": "CASE_METADATA",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "chargeback_date",
+      "description": "Chargeback date frozen in the immutable case snapshot.",
+      "value_type": "DATE",
+      "source_type": "CASE_METADATA",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "cvv_result",
+      "description": "Card Verification Value result frozen in the disputed transaction metadata.",
+      "value_type": "STRING",
+      "source_type": "CASE_METADATA",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "image_observed_item_colour",
+      "description": "Item colour directly visible in an evidence image without comparison to a listing.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_VISUAL_OBSERVATION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "image_observed_item_type",
+      "description": "Item type directly visible in an evidence image without deciding whether it is the purchased item.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_VISUAL_OBSERVATION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "image_observed_serial_number",
+      "description": "Serial-number text directly visible in an evidence image.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_VISUAL_OBSERVATION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "image_observed_visible_damage",
+      "description": "Each area or type of damage directly visible in an evidence image without deciding whether the item is defective.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_VISUAL_OBSERVATION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_recorded_charged_fee_amount",
+      "description": "Fee amount asserted as charged in the merchant transaction record.",
+      "value_type": "DECIMAL",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_charged_fee_currency",
+      "description": "Currency asserted for the charged fee in the merchant transaction record.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_first_authorisation_code",
+      "description": "Authorisation code asserted for the first transaction in merchant records.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_first_fulfilment_date",
+      "description": "Fulfilment date asserted for the first purchase in merchant documentation.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_first_purchase_document_id",
+      "description": "Identifier of the merchant document associated with the first purchase event.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_recorded_first_purchase_id",
+      "description": "Purchase or order identifier asserted for the first purchase in merchant records.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_first_transaction_timestamp",
+      "description": "Timestamp asserted for the first transaction in merchant records.",
+      "value_type": "DATETIME",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_fraud_program_indicator",
+      "description": "Fraud-program indicator asserted by the merchant transaction or processing record.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_merchandise_retention_status",
+      "description": "Merchandise-retention status asserted by the merchant after the cardholder complaint.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_post_complaint_usage_date",
+      "description": "Each post-complaint merchandise usage date asserted by merchant records.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_recorded_prior_billing_postcode",
+      "description": "Billing postcode asserted for each prior transaction in merchant records.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_recorded_prior_transaction_date",
+      "description": "Transaction date asserted for each prior undisputed transaction in merchant records.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_recorded_prior_undisputed_transaction_count",
+      "description": "Count of prior transactions identified as undisputed by merchant records.",
+      "value_type": "INTEGER",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_recurring_opt_in_date",
+      "description": "Recurring-billing opt-in date asserted by merchant records.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_recurring_opt_in_method",
+      "description": "Recurring-billing opt-in method asserted by merchant records.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_return_request_date",
+      "description": "Each cardholder return-request date asserted by merchant records.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_recorded_second_authorisation_code",
+      "description": "Authorisation code asserted for the second transaction in merchant records.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_second_fulfilment_date",
+      "description": "Fulfilment date asserted for the second purchase in merchant documentation.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_second_purchase_document_id",
+      "description": "Identifier of the merchant document associated with the second purchase event.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_recorded_second_purchase_id",
+      "description": "Purchase or order identifier asserted for the second purchase in merchant records.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_second_transaction_timestamp",
+      "description": "Timestamp asserted for the second transaction in merchant records.",
+      "value_type": "DATETIME",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_recorded_transaction_classification",
+      "description": "Transaction classification asserted by merchant processing records; this does not establish that the issuer classification is incorrect.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_reported_cancellation_request_count",
+      "description": "Number of cancellation requests found in the search described by merchant records.",
+      "value_type": "INTEGER",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_reported_cancellation_search_scope",
+      "description": "Systems and time range the merchant states were searched for cancellation requests.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_reported_notification_channel",
+      "description": "Channel through which the merchant states an upcoming-charge notification was sent.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_reported_notification_content",
+      "description": "Upcoming-charge notification content the merchant states was sent to the cardholder.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_reported_notification_date",
+      "description": "Date on which the merchant states each upcoming-charge notification was sent.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_stated_cancellation_method",
+      "description": "Cancellation method stated in the merchant recurring-billing terms.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_stated_cancellation_policy",
+      "description": "No-show or cancellation policy text stated by the merchant.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_cancellation_window_hours",
+      "description": "Cancellation-window duration in hours stated by the merchant policy.",
+      "value_type": "INTEGER",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_expected_service_date",
+      "description": "Expected service date stated in merchant booking or service documentation.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_first_purchase_description",
+      "description": "Item or service description stated for the first purchase in merchant documentation.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_policy_disclosure_channel",
+      "description": "Channel through which the merchant states the cancellation policy was disclosed at booking.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_policy_disclosure_date",
+      "description": "Date on which the merchant states the cancellation policy was disclosed.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_policy_fee_amount",
+      "description": "Fee amount stated in the merchant no-show or cancellation policy.",
+      "value_type": "DECIMAL",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_policy_fee_currency",
+      "description": "Currency stated for the fee in the merchant no-show or cancellation policy.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_product_description",
+      "description": "Product description stated in the merchant listing without comparison to delivered-item evidence.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_recurring_billing_terms",
+      "description": "Recurring-billing arrangement stated in the merchant terms of service.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_return_method",
+      "description": "Return or refund method stated by the merchant policy.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "MULTIPLE"
+    },
+    {
+      "fact_name": "merchant_stated_return_window_days",
+      "description": "Return-window duration in days stated by the merchant policy.",
+      "value_type": "INTEGER",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "merchant_stated_second_purchase_description",
+      "description": "Item or service description stated for the second purchase in merchant documentation.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "service_record_reported_completion_date",
+      "description": "Service-completion date asserted by a booking, attendance, or access record.",
+      "value_type": "DATE",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "service_record_reported_completion_status",
+      "description": "Service-completion status asserted by a booking, attendance, or access record; this does not establish that service was rendered.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "shipping_record_carrier_name",
+      "description": "Carrier name stated in a carrier or merchant shipping record.",
+      "value_type": "STRING",
+      "source_type": "EVIDENCE_TEXT_ASSERTION",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "three_ds_status",
+      "description": "3-D Secure authentication status frozen in the disputed transaction metadata.",
+      "value_type": "STRING",
+      "source_type": "CASE_METADATA",
+      "cardinality": "SINGLE"
+    },
+    {
+      "fact_name": "transaction_date",
+      "description": "Transaction timestamp frozen in the immutable case snapshot.",
+      "value_type": "DATETIME",
+      "source_type": "CASE_METADATA",
+      "cardinality": "SINGLE"
+    }
+  ]
+}

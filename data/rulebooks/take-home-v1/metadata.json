@@ -1,0 +1,71 @@
+{
+  "rulebook_id": "take-home-v1",
+  "source_documents": [
+    {
+      "filename": "reason-codes.pdf",
+      "path": "source/reason-codes.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 100092,
+      "sha256": "32bcc199ee56ecc31b63f5d033d4a36b08dd01a3f6f365accfba85d51f4f18f8",
+      "read_only": true,
+      "parse_during_case_run": false
+    }
+  ],
+  "canonical_transcript": {
+    "path": "transcript/canonical-transcript.json",
+    "sha256": "e2f9a5b52095b2dabf2adcda6afe4828af8f0f32658351dae2c6f735f84a0625",
+    "source_sha256": "32bcc199ee56ecc31b63f5d033d4a36b08dd01a3f6f365accfba85d51f4f18f8",
+    "page_count": 7,
+    "line_count": 111
+  },
+  "policies": [
+    {
+      "policy_id": "mastercard-4837-take-home-v1",
+      "path": "policies/mastercard-4837.json",
+      "sha256": "be0eb382bd7943ead45b97413aaf2356bff3f0a7c36ba53e0eedd587bcafd6bb",
+      "transcript_sha256": "e2f9a5b52095b2dabf2adcda6afe4828af8f0f32658351dae2c6f735f84a0625"
+    },
+    {
+      "policy_id": "mastercard-4855-take-home-v1",
+      "path": "policies/mastercard-4855.json",
+      "sha256": "e51074d8a7dbf3cd5601460f69e6fff7df8fd7521e0cba7f224278eeb42a6d37",
+      "transcript_sha256": "e2f9a5b52095b2dabf2adcda6afe4828af8f0f32658351dae2c6f735f84a0625"
+    },
+    {
+      "policy_id": "mastercard-4859-take-home-v1",
+      "path": "policies/mastercard-4859.json",
+      "sha256": "55c6c48b7ffe27c861a06e110440cfcae817bcea0cdd2be8fa39f800ea4f0927",
+      "transcript_sha256": "e2f9a5b52095b2dabf2adcda6afe4828af8f0f32658351dae2c6f735f84a0625"
+    },
+    {
+      "policy_id": "visa-10.5-take-home-v1",
+      "path": "policies/visa-10.5.json",
+      "sha256": "fe93772e19a33ba7bc7698261618c7d9456aa8588dad8aa2bafece0bf4106380",
+      "transcript_sha256": "e2f9a5b52095b2dabf2adcda6afe4828af8f0f32658351dae2c6f735f84a0625"
+    },
+    {
+      "policy_id": "visa-12.6.1-take-home-v1",
+      "path": "policies/visa-12.6.1.json",
+      "sha256": "e05b1243f203abb5e85bd306c513ffa6ffee8d2cccfe2563af85a4498135e95b",
+      "transcript_sha256": "e2f9a5b52095b2dabf2adcda6afe4828af8f0f32658351dae2c6f735f84a0625"
+    },
+    {
+      "policy_id": "visa-13.1-take-home-v1",
+      "path": "policies/visa-13.1.json",
+      "sha256": "2cebbbba310b75e7676c1bc101959adabb21167ba0ade97ffd5e4cc55b1c210a",
+      "transcript_sha256": "e2f9a5b52095b2dabf2adcda6afe4828af8f0f32658351dae2c6f735f84a0625"
+    },
+    {
+      "policy_id": "visa-13.2-take-home-v1",
+      "path": "policies/visa-13.2.json",
+      "sha256": "f1fd22055cd1356f728e2f0bd4c432e2401634f77fe703df6d138862b19d7bc7",
+      "transcript_sha256": "e2f9a5b52095b2dabf2adcda6afe4828af8f0f32658351dae2c6f735f84a0625"
+    },
+    {
+      "policy_id": "visa-13.3-take-home-v1",
+      "path": "policies/visa-13.3.json",
+      "sha256": "4c2a4aa3974db696ce8b661ba99a6050045c949b50f7ffa2fe41ddad4325ccc0",
+      "transcript_sha256": "e2f9a5b52095b2dabf2adcda6afe4828af8f0f32658351dae2c6f735f84a0625"
+    }
+  ]
+}
