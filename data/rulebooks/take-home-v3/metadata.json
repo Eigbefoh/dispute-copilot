@@ -1,0 +1,89 @@
+{
+  "rulebook_id": "take-home-v3",
+  "source_documents": [
+    {
+      "filename": "reason-codes.pdf",
+      "path": "source/reason-codes.pdf",
+      "mime_type": "application/pdf",
+      "size_bytes": 100092,
+      "sha256": "32bcc199ee56ecc31b63f5d033d4a36b08dd01a3f6f365accfba85d51f4f18f8",
+      "read_only": true,
+      "parse_during_case_run": false
+    }
+  ],
+  "canonical_transcript": {
+    "path": "transcript/canonical-transcript.json",
+    "sha256": "64d8d9b334b409fd7e5cef2aea08e8fd7133365bbd3dbb445ba2eddb07e12ffc",
+    "source_sha256": "32bcc199ee56ecc31b63f5d033d4a36b08dd01a3f6f365accfba85d51f4f18f8",
+    "page_count": 7,
+    "line_count": 111
+  },
+  "fact_catalogue": {
+    "path": "facts/catalogue.json",
+    "sha256": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623",
+    "fact_count": 74
+  },
+  "fact_review": {
+    "path": "facts/fact-review.csv",
+    "sha256": "15b627ee4f79ccd07e48acc6e1ea8e01fc5a4c51249b670650786f0430008efa",
+    "row_count": 58
+  },
+  "policies": [
+    {
+      "policy_id": "mastercard-4837-take-home-v3",
+      "path": "policies/mastercard-4837.json",
+      "sha256": "b672e51827565bf156c27be47cc033e46f40de20dbb36f09a3deec75accbf10a",
+      "transcript_sha256": "64d8d9b334b409fd7e5cef2aea08e8fd7133365bbd3dbb445ba2eddb07e12ffc",
+      "fact_catalogue_sha256": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623"
+    },
+    {
+      "policy_id": "mastercard-4855-take-home-v3",
+      "path": "policies/mastercard-4855.json",
+      "sha256": "c36e9bf263bd33ff59c035a6d5cd638ad368ebe9ca4aa53a3be641d15c0c86b3",
+      "transcript_sha256": "64d8d9b334b409fd7e5cef2aea08e8fd7133365bbd3dbb445ba2eddb07e12ffc",
+      "fact_catalogue_sha256": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623"
+    },
+    {
+      "policy_id": "mastercard-4859-take-home-v3",
+      "path": "policies/mastercard-4859.json",
+      "sha256": "2528cb1df8f563ddedb3d3f0dc286eadf12f21bd63917716866f4206432d986a",
+      "transcript_sha256": "64d8d9b334b409fd7e5cef2aea08e8fd7133365bbd3dbb445ba2eddb07e12ffc",
+      "fact_catalogue_sha256": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623"
+    },
+    {
+      "policy_id": "visa-10.5-take-home-v3",
+      "path": "policies/visa-10.5.json",
+      "sha256": "5b056b64bd78fdd4af82a40c1bc12dc5151bc2d9221ede16a2344bfe0a1e5c18",
+      "transcript_sha256": "64d8d9b334b409fd7e5cef2aea08e8fd7133365bbd3dbb445ba2eddb07e12ffc",
+      "fact_catalogue_sha256": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623"
+    },
+    {
+      "policy_id": "visa-12.6.1-take-home-v3",
+      "path": "policies/visa-12.6.1.json",
+      "sha256": "872a72f8916f04bfdd251b3bf382de39bc93d589470037ddac8035b683de9927",
+      "transcript_sha256": "64d8d9b334b409fd7e5cef2aea08e8fd7133365bbd3dbb445ba2eddb07e12ffc",
+      "fact_catalogue_sha256": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623"
+    },
+    {
+      "policy_id": "visa-13.1-take-home-v3",
+      "path": "policies/visa-13.1.json",
+      "sha256": "bf635a548657d933623a71a11f53e299203de202618a91869ed4dddfc36cf726",
+      "transcript_sha256": "64d8d9b334b409fd7e5cef2aea08e8fd7133365bbd3dbb445ba2eddb07e12ffc",
+      "fact_catalogue_sha256": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623"
+    },
+    {
+      "policy_id": "visa-13.2-take-home-v3",
+      "path": "policies/visa-13.2.json",
+      "sha256": "f333e29abf413ada8cbc5f9acfcaa73e2ff9a58156f0602f90cf9a62eac54a37",
+      "transcript_sha256": "64d8d9b334b409fd7e5cef2aea08e8fd7133365bbd3dbb445ba2eddb07e12ffc",
+      "fact_catalogue_sha256": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623"
+    },
+    {
+      "policy_id": "visa-13.3-take-home-v3",
+      "path": "policies/visa-13.3.json",
+      "sha256": "808a43a067f3c70a65ca4078783776821398beec20f1277e7fdaec492cc9f494",
+      "transcript_sha256": "64d8d9b334b409fd7e5cef2aea08e8fd7133365bbd3dbb445ba2eddb07e12ffc",
+      "fact_catalogue_sha256": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623"
+    }
+  ]
+}

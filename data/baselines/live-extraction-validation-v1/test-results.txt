@@ -1,0 +1,11 @@
+Baseline: live-extraction-validation-v1
+Recorded: 2026-07-29
+Command: .venv/bin/pytest -q
+
+Result:
+284 passed, 1 skipped in 6.83s
+
+Intentional skip:
+tests/test_lean_fact_resolution.py:611
+live provider integration requires explicit enablement and MODEL_PROVIDER,
+MODEL_API_KEY, and MODEL_NAME

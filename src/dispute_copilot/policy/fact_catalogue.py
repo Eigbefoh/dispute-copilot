@@ -212,12 +212,10 @@ def validate_fact_catalogue(
         if definition.source_type == "CASE_METADATA"
     }
     missing_resolvers = metadata_names - metadata_resolver_names
-    unused_resolvers = metadata_resolver_names - metadata_names
-    if missing_resolvers or unused_resolvers:
+    if missing_resolvers:
         raise FactCatalogueValidationError(
             "metadata resolver mismatch; "
-            f"missing={sorted(missing_resolvers)}, "
-            f"unused={sorted(unused_resolvers)}"
+            f"missing={sorted(missing_resolvers)}"
         )
 
 

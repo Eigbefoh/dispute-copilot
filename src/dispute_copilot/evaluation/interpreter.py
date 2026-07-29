@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
+import re
+import unicodedata
 
 from dispute_copilot.evaluation.errors import PredicateExecutionError
 from dispute_copilot.evaluation.models import FactBinding, TruthValue
@@ -36,7 +38,32 @@ class PredicateInterpreter:
             return self._evaluate_all_of(predicate, facts)
         if predicate.operator is PredicateOperator.ANY_OF:
             return self._evaluate_any_of(predicate, facts)
+        if predicate.operator is PredicateOperator.NOT:
+            return self._evaluate_not(predicate, facts)
         return self._evaluate_leaf(predicate, facts)
+
+    def _evaluate_not(
+        self,
+        predicate: PredicateNode,
+        facts: dict[str, ResolvedFact],
+    ) -> PredicateOutcome:
+        child = self.evaluate(predicate.predicates[0], facts)
+        result = {
+            TruthValue.TRUE: TruthValue.FALSE,
+            TruthValue.FALSE: TruthValue.TRUE,
+            TruthValue.UNKNOWN: TruthValue.UNKNOWN,
+        }[child.result]
+        return _combine(
+            (child,),
+            result=result,
+            primary_code=(
+                "PREDICATE_TRUE"
+                if result is TruthValue.TRUE
+                else "PREDICATE_FALSE"
+                if result is TruthValue.FALSE
+                else "NEGATED_PREDICATE_NOT_ESTABLISHED"
+            ),
+        )
 
     def _evaluate_all_of(
         self,
@@ -163,6 +190,27 @@ class PredicateInterpreter:
                 ),
                 predicate.value_match,
             )
+        elif predicate.operator is PredicateOperator.MATERIAL_ADDRESS_MATCH:
+            assert other is not None
+            right_values = tuple(
+                item.value for item in other.resolved_values
+            )
+            result = _compare_pairs(
+                left_values,
+                right_values,
+                predicate.value_match,
+                _material_address_matches,
+            )
+            if (
+                result is TruthValue.FALSE
+                and predicate.mismatch_result.value == "UNKNOWN"
+            ):
+                return PredicateOutcome(
+                    result=TruthValue.UNKNOWN,
+                    basis_codes=("MATERIAL_ADDRESS_ATTRIBUTION_CONFLICT",),
+                    bindings=clean_bindings,
+                    unresolved_facts=(),
+                )
         elif predicate.operator in {
             PredicateOperator.DATE_ON_OR_BEFORE,
             PredicateOperator.DATE_ON_OR_AFTER,
@@ -435,3 +483,27 @@ def _numeric_compare(
         )
     numeric = Decimal(value)
     return numeric >= bound if at_least else numeric <= bound
+
+
+def _material_address_matches(left: object, right: object) -> bool:
+    """Compare only normalized source strings; never infer components."""
+    if not isinstance(left, str) or not isinstance(right, str):
+        raise PredicateExecutionError(
+            "material_address_match received a non-string value"
+        )
+    normalized_left = _normalize_address(left)
+    normalized_right = _normalize_address(right)
+    if not normalized_left or not normalized_right:
+        raise PredicateExecutionError(
+            "material_address_match received an empty normalized value"
+        )
+    return (
+        normalized_left == normalized_right
+        or normalized_left in normalized_right
+        or normalized_right in normalized_left
+    )
+
+
+def _normalize_address(value: str) -> str:
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    return re.sub(r"[^a-z0-9]", "", normalized)

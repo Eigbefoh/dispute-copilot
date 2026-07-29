@@ -1,0 +1,132 @@
+{
+  "baseline_id": "live-extraction-validation-v1",
+  "extraction_mode": "DETERMINISTIC_PROVENANCE_CHECKED_FIXTURE",
+  "rulebook_version": "take-home-v3",
+  "presentation_rules_version": "1.1.0",
+  "cases": {
+    "CB-2025-0001": {
+      "run_id": "2b093d15-7f6b-4286-a2aa-6e8528b135a2",
+      "selection_id": "a81a223c-9a3c-4cdf-b22a-8ae6e5a75618",
+      "resolution_id": "f0570b75-4be3-4a81-934f-e4c616fbef4b",
+      "evaluation_id": "2df5bd19-337a-40fc-bd09-977837b77be2",
+      "recommendation_id": "a057b295-0b51-4692-b3a4-ed79dc6d92d7",
+      "review_package_id": "5499156c-40c4-4986-8a22-d8ff767c22e2",
+      "policy_id": "visa-13.1-take-home-v3",
+      "policy_sha256": "bf635a548657d933623a71a11f53e299203de202618a91869ed4dddfc36cf726",
+      "requirement_grades": {
+        "V13.1-R1": "SATISFIED",
+        "V13.1-R2": "NOT_APPLICABLE",
+        "V13.1-R3": "SATISFIED",
+        "V13.1-R4": "SATISFIED"
+      },
+      "aggregation": {
+        "mode": "ALL_APPLICABLE",
+        "satisfied_count": 3,
+        "not_satisfied_count": 0,
+        "unresolved_count": 0,
+        "not_applicable_count": 1,
+        "applicable_count": 3,
+        "minimum_required": 3,
+        "maximum_possible_satisfied": 3
+      },
+      "recommendation": "RECOMMEND_REPRESENT",
+      "fact_resolution_content_hash": "2eb77b997f64532927d4a60c9a3e37f51ccd1122de3544fdc79bbe4150b5b224",
+      "evaluation_content_hash": "f1d16cf980aa91f899aa779dda9f1532499d379499db9d4f430026ea5f2e9e5a",
+      "recommendation_content_hash": "44244a603e4c8979f08420cb71898cef89a3fb3862b2f65b6c44d4b38b26ce2a",
+      "review_package_content_hash": "f4cb203febcc2415afeadb2d20c8028870f1e98ca7eb410bcf09e086e0d048bc"
+    },
+    "CB-2025-0002": {
+      "run_id": "9c0d6601-ba98-4d45-b8cd-ee9be07435ff",
+      "selection_id": "36a130ea-1ac0-4ee1-ae54-49042f393b6c",
+      "resolution_id": "4fbb98f3-adfc-4ae0-a0b3-fa4bcb949e24",
+      "evaluation_id": "dd11d2ac-f628-4ea5-9932-d0397caf00d6",
+      "recommendation_id": "072f56f7-e71c-4136-8dbd-2c2a8d6823e0",
+      "review_package_id": "7d48853e-a875-4d6a-b6a5-fa0f442913e3",
+      "policy_id": "visa-13.1-take-home-v3",
+      "policy_sha256": "bf635a548657d933623a71a11f53e299203de202618a91869ed4dddfc36cf726",
+      "requirement_grades": {
+        "V13.1-R1": "NOT_ESTABLISHED",
+        "V13.1-R2": "NOT_APPLICABLE",
+        "V13.1-R3": "SATISFIED",
+        "V13.1-R4": "SATISFIED"
+      },
+      "aggregation": {
+        "mode": "ALL_APPLICABLE",
+        "satisfied_count": 2,
+        "not_satisfied_count": 0,
+        "unresolved_count": 1,
+        "not_applicable_count": 1,
+        "applicable_count": 3,
+        "minimum_required": 3,
+        "maximum_possible_satisfied": 3
+      },
+      "recommendation": "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+      "fact_resolution_content_hash": "61e82dab436bcf17ee56c7dbb04705b27175bd381fa45d0ea16e7fbd1e0ffda3",
+      "evaluation_content_hash": "c6370f8a76e55588edccef003d2b6ec732e9aa6d55d9edba70f6029cc935746b",
+      "recommendation_content_hash": "4ac776c6dae69d2bd2a8f295f9e0d9c7cc37bf0e71a9ddbde84ed10a07f8716e",
+      "review_package_content_hash": "3cced7c2052e7f47f1124adb10295606355b262cb8ad01460b00e75e638ba561"
+    },
+    "CB-2025-0003": {
+      "run_id": "d32da9a1-73a4-404c-924e-cbf7cc63cb5d",
+      "selection_id": "100f7ae1-2f7f-4294-b206-facb1a1a6d74",
+      "resolution_id": "c0ada575-0556-437e-b129-9c45ee7f7ddf",
+      "evaluation_id": "f51b1518-6ae2-4557-bec1-cc9cf98fe8bd",
+      "recommendation_id": "bea09f46-0fb7-4b95-b24c-9356caf00f8e",
+      "review_package_id": "a9811349-af8a-4162-9f77-3d1ac359d5e9",
+      "policy_id": "mastercard-4837-take-home-v3",
+      "policy_sha256": "b672e51827565bf156c27be47cc033e46f40de20dbb36f09a3deec75accbf10a",
+      "requirement_grades": {
+        "MC4837-R1": "SATISFIED",
+        "MC4837-R2": "SATISFIED",
+        "MC4837-R3": "NOT_ESTABLISHED",
+        "MC4837-R4": "NOT_ESTABLISHED"
+      },
+      "aggregation": {
+        "mode": "ANY_TWO",
+        "satisfied_count": 2,
+        "not_satisfied_count": 0,
+        "unresolved_count": 2,
+        "not_applicable_count": 0,
+        "applicable_count": 4,
+        "minimum_required": 2,
+        "maximum_possible_satisfied": 4
+      },
+      "recommendation": "RECOMMEND_REPRESENT",
+      "fact_resolution_content_hash": "08c2a4dc68bbd38d181f5dd5259ad8e3ecd9363419e498ecb5a8a2de170b604b",
+      "evaluation_content_hash": "a18499196b3f932aa3a7fe3686bffddeaeb69afd57ed165e367710b49f459816",
+      "recommendation_content_hash": "d89c0e5ef46a95aa9a19a7bbf3f865ff749fe43573acbe9a7532c8f3e37c3ce6",
+      "review_package_content_hash": "01fe97dff839b0880ccafdb1d9ea5001d8cc9de5dc6fceb53e720855633c6f3d"
+    },
+    "CB-2025-0004": {
+      "run_id": "6524cb44-46ab-42d4-91c6-fed04c58786a",
+      "selection_id": "0cecb89b-b923-45f2-a694-b26d5fe74e86",
+      "resolution_id": "a1bf559b-e249-433d-bb0f-0ee5dc62d03f",
+      "evaluation_id": "34b55f81-1447-41a9-828d-6bce28c0ef3f",
+      "recommendation_id": "0e0de78f-9224-429d-8d27-2efaef6c2561",
+      "review_package_id": "a94ed8d9-d5f1-4922-beb0-a80b90ab6f6e",
+      "policy_id": "mastercard-4837-take-home-v3",
+      "policy_sha256": "b672e51827565bf156c27be47cc033e46f40de20dbb36f09a3deec75accbf10a",
+      "requirement_grades": {
+        "MC4837-R1": "NOT_SATISFIED",
+        "MC4837-R2": "NOT_SATISFIED",
+        "MC4837-R3": "NOT_SATISFIED",
+        "MC4837-R4": "NOT_ESTABLISHED"
+      },
+      "aggregation": {
+        "mode": "ANY_TWO",
+        "satisfied_count": 0,
+        "not_satisfied_count": 3,
+        "unresolved_count": 1,
+        "not_applicable_count": 0,
+        "applicable_count": 4,
+        "minimum_required": 2,
+        "maximum_possible_satisfied": 1
+      },
+      "recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+      "fact_resolution_content_hash": "9c55775fe2ad1a42fcd948803e9fce280eb71becbba4fea5d547ca45fadf0542",
+      "evaluation_content_hash": "6e6c99342717b05d17a5a27110be34321869c295c932368ca44ef4485603526b",
+      "recommendation_content_hash": "c5abc5d48ceccef5e5ac390d18710e330e769e0eb521ff4515d4208564537926",
+      "review_package_content_hash": "8264a4299dd96e399350cf2503df88536158d81bedbda3129fa417ac6710c44b"
+    }
+  }
+}

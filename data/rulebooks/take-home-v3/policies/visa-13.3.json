@@ -1,0 +1,57 @@
+{
+  "policy_id": "visa-13.3-take-home-v3",
+  "scheme": "visa",
+  "reason_code": "13.3",
+  "rulebook_version": "take-home-v3",
+  "requirements": [
+    {
+      "requirement_id": "V13.3-R1",
+      "description": "Published description of the purchased item",
+      "required_facts": [
+        "merchant_stated_product_description"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v3",
+        "page": 3,
+        "start_line_id": "P003-L006",
+        "end_line_id": "P003-L006",
+        "exact_quote": "1. The merchant's published description of the item the cardholder purchased"
+      }
+    },
+    {
+      "requirement_id": "V13.3-R2",
+      "description": "Evidence the delivered item matches its description",
+      "required_facts": [
+        "image_observed_item_colour",
+        "image_observed_item_type",
+        "image_observed_visible_damage",
+        "image_observed_serial_number"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v3",
+        "page": 3,
+        "start_line_id": "P003-L007",
+        "end_line_id": "P003-L007",
+        "exact_quote": "2. Evidence the item delivered matches that description (photos, specs, serial number match)"
+      }
+    },
+    {
+      "requirement_id": "V13.3-R3",
+      "description": "Return route or post-complaint retention evidence",
+      "required_facts": [
+        "merchant_stated_return_method",
+        "merchant_stated_return_window_days",
+        "merchant_recorded_return_request_date",
+        "merchant_recorded_post_complaint_usage_date",
+        "merchant_recorded_merchandise_retention_status"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v3",
+        "page": 3,
+        "start_line_id": "P003-L008",
+        "end_line_id": "P003-L008",
+        "exact_quote": "3. Evidence the merchant offered a return/refund route and the cardholder did not use it, OR evidence the cardholder used and retained the merchandise after raising the complaint"
+      }
+    }
+  ]
+}

@@ -966,7 +966,7 @@ def test_rulebook_and_catalogue_identity_are_exact(
     )
     with pytest.raises(
         ResolutionContextError,
-        match="take-home-v2",
+        match="catalogue version",
     ):
         admit(
             context,

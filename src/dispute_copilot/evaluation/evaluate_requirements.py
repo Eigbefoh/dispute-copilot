@@ -80,6 +80,16 @@ def main(argv: Sequence[str] | None = None) -> int:
                 + ", ".join(item.missing_or_unresolved_facts)
             )
     print()
+    if result.aggregation_summary is not None:
+        summary = result.aggregation_summary
+        print(f"Aggregation: {summary.mode}")
+        print(
+            "  Satisfied: "
+            f"{summary.satisfied_count}; unresolved: "
+            f"{summary.unresolved_count}; maximum possible: "
+            f"{summary.maximum_possible_satisfied}; minimum required: "
+            f"{summary.minimum_required}"
+        )
     print(f"Overall: {result.overall_status.value}")
     print(f"Status: {result.status}")
     print("Recommendation produced: NO")

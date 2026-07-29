@@ -4,7 +4,7 @@ Dispute Copilot is an application for processing payment disputes through a
 traceable pipeline of evidence intake, policy evaluation, decisioning, and
 analyst review.
 
-This repository currently contains the first-stage project skeleton:
+The repository now contains an end-to-end, immutable decision pipeline:
 
 ```text
 dispute-copilot/
@@ -14,10 +14,18 @@ dispute-copilot/
 │   └── dispute_copilot/
 │       ├── domain/
 │       ├── intake/
+│       ├── extraction/
+│       ├── evaluation/
+│       ├── recommendation/
+│       ├── analyst_review/
+│       ├── human_review/
 │       ├── orchestration/
 │       ├── repositories/
 │       └── cli.py
 ├── data/
+│   ├── rulebooks/
+│   ├── presentation-rules/
+│   └── human-review-rules/
 └── tests/
 ```
 
@@ -90,11 +98,26 @@ Case metadata facts are routed to a deterministic resolver. Only
 source-qualified evidence assertions and visual observations are eligible for
 the later probabilistic extraction boundary.
 
+Import the cross-case policy-demonstration version:
+
+```bash
+python -m dispute_copilot.policy.import_rulebook \
+  data/rulebooks/take-home-v3
+```
+
+`take-home-v3` keeps all eight policies and adds explicit deterministic policy
+aggregation. Visa 13.1 uses `ALL_APPLICABLE`, including a service-only
+applicability rule and material address comparisons. Mastercard 4837 uses
+`ANY_TWO`: AVS plus CVV is one composite route, successful 3-D Secure is a
+second route, and the evaluator exposes satisfied, unresolved, minimum-required
+and maximum-possible route counts. The fact catalogue contains 74 reviewed,
+source-aware definitions.
+
 Select an exact imported policy for a persisted case run:
 
 ```bash
 python -m dispute_copilot.cli select-policy <run-id> \
-  --rulebook-version take-home-v2
+  --rulebook-version take-home-v3
 ```
 
 Selection reads only immutable SQLite snapshots, writes a separate append-only
@@ -254,6 +277,7 @@ interpreting an allow-listed predicate AST with three-valued logic:
 - `TRUE` → `SATISFIED`
 - `FALSE` → `NOT_SATISFIED`
 - `UNKNOWN` → `NOT_ESTABLISHED`
+- an inapplicable requirement → `NOT_APPLICABLE`
 
 `NOT_FOUND`, `AMBIGUOUS`, and `CONFLICTING` facts yield `UNKNOWN`; absence of
 evidence never proves the opposite. The immutable evaluation and
@@ -261,6 +285,13 @@ evidence never proves the opposite. The immutable evaluation and
 identical evaluation inputs returns the existing result. This command has no
 model, network, OCR, PDF, image, or evidence-file path and produces no dispute
 recommendation.
+
+Policy-level aggregation is also declarative and versioned. `ALL_APPLICABLE`
+excludes `NOT_APPLICABLE` requirements, fails on an explicit applicable
+failure, and otherwise remains unresolved if an applicable requirement is not
+established. `ANY_TWO` recommends representment once two routes are satisfied,
+recommends against representment when
+`satisfied_count + unresolved_count < 2`, and otherwise remains insufficient.
 
 Map the persisted evaluation to an analyst-review recommendation:
 
@@ -287,7 +318,8 @@ Assemble the completed decision chain for analyst review:
 
 ```bash
 python -m dispute_copilot.analyst_review.review \
-  --recommendation-id <recommendation-id>
+  --recommendation-id <recommendation-id> \
+  --presentation-rules-version 1.1.0
 ```
 
 Pass `--json` to emit the complete structured package. The command follows the
@@ -304,6 +336,41 @@ at most three deterministic sentences. Assembly reads no evidence, policy PDF,
 OCR output, model provider, or network resource. An identical replay returns
 the existing package. Package creation adds no workflow event, makes no human
 decision, and leaves the case at `READY_FOR_ANALYST_REVIEW`.
+
+Review the package in the local human-in-the-loop interface:
+
+```bash
+export ANALYST_IDENTITY="vic"
+python -m dispute_copilot.human_review.app \
+  --review-package-id <review-package-id>
+```
+
+The split-screen Gradio interface keeps the advisory recommendation separate
+from the final human action. It revalidates every linked source hash before
+display, accepts no browser-supplied file path or analyst identity, and records
+one immutable `AnalystDecision` plus its workflow event atomically. Confirm,
+override and request-more-evidence actions use a frozen, hashed decision-rules
+manifest. Closing without deciding writes nothing.
+
+Current evidence provenance has exact document and page references but no
+grounded bounding boxes. The interface therefore renders native PDF support as
+`PAGE_ONLY` and visual observations as `WHOLE_IMAGE_CONTEXT`. It never
+fabricates a precise highlight for the CB-2025-0006 delivery photo. See
+`docs/human-review-ui.md` for operation and limitations.
+
+The cross-case acceptance suite proves the same implementation against:
+
+| Case | Policy | Recommendation |
+|---|---|---|
+| CB-2025-0001 | Visa 13.1 | `RECOMMEND_REPRESENT` |
+| CB-2025-0002 | Visa 13.1 | `INSUFFICIENT_EVIDENCE_TO_REPRESENT` |
+| CB-2025-0003 | Mastercard 4837 | `RECOMMEND_REPRESENT` |
+| CB-2025-0004 | Mastercard 4837 | `RECOMMEND_DO_NOT_REPRESENT` |
+
+These expectations exist only in tests. Production selection, extraction,
+evaluation, recommendation and UI code contain no case-ID-specific branch.
+See [docs/cross-case-demo.md](docs/cross-case-demo.md) for the automated proof,
+live-provider command sequence and causal-pair walkthrough.
 
 `.env.example` contains names and non-secret defaults only. Local `.env` files
 and API credentials are excluded by `.gitignore` and must never be committed.
@@ -333,5 +400,7 @@ pytest -q
   progression.
 - `analyst_review`: Offline lineage validation and immutable UI-ready package
   assembly without workflow progression.
+- `human_review`: Integrity-checked evidence presentation, local Gradio review,
+  and append-only human decisions with atomic workflow events.
 - `data`: Local development data and evidence.
 - `tests`: Automated tests.

@@ -27,12 +27,14 @@ class TruthValue(StrEnum):
     TRUE = "TRUE"
     FALSE = "FALSE"
     UNKNOWN = "UNKNOWN"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
 class RequirementStatus(StrEnum):
     SATISFIED = "SATISFIED"
     NOT_SATISFIED = "NOT_SATISFIED"
     NOT_ESTABLISHED = "NOT_ESTABLISHED"
+    NOT_APPLICABLE = "NOT_APPLICABLE"
 
 
 class OverallEvaluationStatus(StrEnum):
@@ -43,6 +45,35 @@ class OverallEvaluationStatus(StrEnum):
     ONE_OR_MORE_REQUIREMENTS_NOT_ESTABLISHED = (
         "ONE_OR_MORE_REQUIREMENTS_NOT_ESTABLISHED"
     )
+
+
+class AggregationSummary(StrictFrozenModel):
+    mode: Literal["ALL_APPLICABLE", "ANY_TWO"]
+    satisfied_count: int = Field(ge=0)
+    not_satisfied_count: int = Field(ge=0)
+    unresolved_count: int = Field(ge=0)
+    not_applicable_count: int = Field(ge=0)
+    applicable_count: int = Field(ge=0)
+    minimum_required: int = Field(ge=1)
+    maximum_possible_satisfied: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def counts_are_consistent(self) -> "AggregationSummary":
+        if (
+            self.satisfied_count
+            + self.not_satisfied_count
+            + self.unresolved_count
+            != self.applicable_count
+        ):
+            raise ValueError("applicable aggregation counts are inconsistent")
+        if self.maximum_possible_satisfied != (
+            self.satisfied_count + self.unresolved_count
+        ):
+            raise ValueError(
+                "maximum_possible_satisfied must equal satisfied plus "
+                "unresolved"
+            )
+        return self
 
 
 class FactBinding(StrictFrozenModel):
@@ -97,6 +128,7 @@ class RequirementEvaluationResult(StrictFrozenModel):
         RequirementEvaluation,
         ...,
     ] = Field(min_length=1)
+    aggregation_summary: AggregationSummary | None = None
     overall_status: OverallEvaluationStatus
     status: Literal["READY_FOR_RECOMMENDATION"]
     created_at: datetime
@@ -140,6 +172,8 @@ def calculate_evaluation_content_hash(
         mode="json",
         exclude={"evaluation_id", "created_at", "content_hash"},
     )
+    if payload.get("aggregation_summary") is None:
+        payload.pop("aggregation_summary", None)
     canonical = json.dumps(
         payload,
         sort_keys=True,

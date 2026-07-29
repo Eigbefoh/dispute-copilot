@@ -84,7 +84,40 @@ class ResolvedValue(StrictFrozenModel):
     """One candidate value inseparably linked to its supporting sources."""
 
     value: FactValue
+    value_type: Literal[
+        "STRING",
+        "DATE",
+        "DATETIME",
+        "INTEGER",
+        "DECIMAL",
+        "BOOLEAN",
+        "ADDRESS",
+    ] | None = None
     provenance: tuple[FactProvenance, ...] = Field(min_length=1)
+
+    @model_validator(mode="before")
+    @classmethod
+    def restore_persisted_runtime_type(cls, data: object) -> object:
+        if not isinstance(data, dict):
+            return data
+        value_type = data.get("value_type")
+        value = data.get("value")
+        restored = value
+        if isinstance(value, str):
+            if value_type == "DATE":
+                restored = date.fromisoformat(value)
+            elif value_type == "DATETIME":
+                restored = datetime.fromisoformat(value)
+            elif value_type == "DECIMAL":
+                restored = Decimal(value)
+        provenance = data.get("provenance")
+        if isinstance(provenance, list):
+            provenance = tuple(provenance)
+        return {
+            **data,
+            "value": restored,
+            "provenance": provenance,
+        }
 
     @model_validator(mode="after")
     def provenance_records_are_unique(self) -> "ResolvedValue":
@@ -226,6 +259,10 @@ def calculate_fact_resolution_content_hash(
             "content_hash",
         },
     )
+    for fact in payload["facts"]:
+        for value in fact["resolved_values"]:
+            if value.get("value_type") is None:
+                value.pop("value_type", None)
     canonical = json.dumps(
         payload,
         sort_keys=True,

@@ -1,0 +1,43 @@
+{
+  "baseline_id": "live-extraction-validation-v1",
+  "recorded_at": "2026-07-29",
+  "git_branch": "agent/live-extraction-validation-baseline",
+  "git_tag": "live-extraction-validation-v1",
+  "test_result": {
+    "passed": 284,
+    "skipped": 1,
+    "failed": 0,
+    "live_provider_test_intentionally_gated": true
+  },
+  "database_state": {
+    "main_database_integrity_check": "ok",
+    "fixture_database_integrity_check": "ok",
+    "take_home_v3_policy_count": 8,
+    "take_home_v3_fact_definition_count": 74,
+    "preserved_analyst_decision_count": 1,
+    "fixture_case_run_count": 4,
+    "fixture_policy_selection_count": 4,
+    "fixture_fact_resolution_count": 4,
+    "fixture_requirement_evaluation_count": 4,
+    "fixture_recommendation_count": 4,
+    "fixture_review_package_count": 4
+  },
+  "sha256": {
+    "source_tree_hash_of_sorted_file_hashes": "0a28a4360ff4004fb17edd47e33aefe7ab52d335a3c68e3ce2372902235f830b",
+    "test_tree_hash_of_sorted_file_hashes": "04bc64171a677bd65247549b0913ee32b8f47026be7dae4adc9733b04520069d",
+    "data/dispute_copilot.db": "ccabbf3385f6dfde12791bd12a6fcc37e905ebdbaf18deeb877e34c36f87b5c8",
+    "data/baselines/live-extraction-validation-v1/fixture-demo.db": "2711068c78b787a1bd485b3227402234a400bfe46525a39442867d306aae7648",
+    "data/baselines/live-extraction-validation-v1/fixture-outcomes.json": "c8d91f0b5273f899913cc85f70db46a13f16112a6c05d203363379309ee8b8b6",
+    "data/baselines/live-extraction-validation-v1/test-results.txt": "3d477a765eaf4bdf0f5d16f2b774f87da6892823a4a6f802eb4dc3a61306da50",
+    "data/cases.json": "81fccb87bbd49e64decce9aaa59b650078b5de6f7b8d5934d93e042fbaa80908",
+    "data/rulebooks/take-home-v3/source/reason-codes.pdf": "32bcc199ee56ecc31b63f5d033d4a36b08dd01a3f6f365accfba85d51f4f18f8",
+    "data/rulebooks/take-home-v3/metadata.json": "9ab56efd7c1e36cd1ccfe2b698a7e7093c160f12f5e5175696a93c36258eb114",
+    "data/rulebooks/take-home-v3/facts/catalogue.json": "e1436df0f6666401c91048e9dc74df31d5aafac6085a7a32c59aed0212239623",
+    "data/rulebooks/take-home-v3/evaluation/predicates.json": "76721c2c43b05ab6a7fc97b800b81fae4a2c8defc48e72df198a306611f50646",
+    "data/presentation-rules/analyst-review-package-v1/1.1.0/manifest.json": "f97272c4e2e7df0e4a6c1968e70656162c3768f9366202880d2736452dcbd7d4",
+    "data/human-review-rules/human-review-v1/1.0.0/manifest.json": "09d7b99d2596d5efde15ee921e871aa60eb531e68d39c5ed20c6baf53ca3c79b",
+    "README.md": "283c04b9da9bf83c0ed3e1869d9e768c7b92e01960622c52277b0b967b88a7ec",
+    "pyproject.toml": "61987206582fb7f17e6d3948e7cfcab9c417b8d6c08c3fc24697ed5242a7890b",
+    ".env.example": "a5898a43fe3d2e72db2a7a954b2529e55bf31537fed24cc97385ab2a7f6a97c8"
+  }
+}

@@ -1,0 +1,77 @@
+{
+  "policy_id": "visa-13.1-take-home-v3",
+  "scheme": "visa",
+  "reason_code": "13.1",
+  "rulebook_version": "take-home-v3",
+  "requirements": [
+    {
+      "requirement_id": "V13.1-R1",
+      "description": "Proof of delivery",
+      "required_facts": [
+        "carrier_reported_tracking_number",
+        "shipping_record_carrier_name",
+        "carrier_reported_delivery_status",
+        "carrier_reported_delivery_address",
+        "carrier_reported_signature_name",
+        "case_recorded_billing_postcode",
+        "avs_result",
+        "case_recorded_issuer_narrative"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v3",
+        "page": 2,
+        "start_line_id": "P002-L014",
+        "end_line_id": "P002-L014",
+        "exact_quote": "1. Proof of delivery: tracking number, carrier name, and confirmation of delivery to the cardholder's address"
+      }
+    },
+    {
+      "requirement_id": "V13.1-R2",
+      "description": "Proof that services were rendered by the expected date",
+      "required_facts": [
+        "case_recorded_purchase_type",
+        "service_record_reported_completion_status",
+        "service_record_reported_completion_date",
+        "merchant_stated_expected_service_date"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v3",
+        "page": 2,
+        "start_line_id": "P002-L015",
+        "end_line_id": "P002-L015",
+        "exact_quote": "2. For services: evidence the service was rendered on or before the expected date (booking confirmation, attendance log, access logs)"
+      }
+    },
+    {
+      "requirement_id": "V13.1-R3",
+      "description": "Delivery or service occurred by the chargeback date",
+      "required_facts": [
+        "carrier_reported_delivery_date",
+        "service_record_reported_completion_date",
+        "chargeback_date"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v3",
+        "page": 2,
+        "start_line_id": "P002-L016",
+        "end_line_id": "P002-L016",
+        "exact_quote": "3. Date of delivery / service rendered is on or before the chargeback date"
+      }
+    },
+    {
+      "requirement_id": "V13.1-R4",
+      "description": "Delivery address matches the address supplied at purchase",
+      "required_facts": [
+        "carrier_reported_delivery_address",
+        "case_recorded_shipping_postcode"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v3",
+        "page": 2,
+        "start_line_id": "P002-L017",
+        "end_line_id": "P002-L017",
+        "exact_quote": "4. The delivery address materially matches the address provided by the cardholder at purchase"
+      }
+    }
+  ]
+}

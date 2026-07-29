@@ -71,6 +71,14 @@ def select_and_validate_policy_predicates(
             f"{policy.policy_id}; found {len(matches)}"
         )
     selected = matches[0]
+    if (
+        manifest.predicate_schema_version.endswith("/2.0.0")
+        and "aggregation" not in selected.model_fields_set
+    ):
+        raise PredicateContractError(
+            "Predicate schema 2.0.0 requires an explicit policy "
+            "aggregation rule"
+        )
     policy_ids = tuple(
         requirement.requirement_id
         for requirement in policy.requirements
@@ -102,6 +110,11 @@ def select_and_validate_policy_predicates(
             executable.predicate,
             definitions,
         )
+        if executable.applicability_predicate is not None:
+            referenced |= _validate_node(
+                executable.applicability_predicate,
+                definitions,
+            )
         if referenced != set(requirement.required_facts):
             raise PredicateContractError(
                 f"{requirement.requirement_id} predicate fact coverage "
@@ -123,6 +136,7 @@ def _validate_node(
     if node.operator in {
         PredicateOperator.ALL_OF,
         PredicateOperator.ANY_OF,
+        PredicateOperator.NOT,
     }:
         referenced: set[str] = set()
         for child in node.predicates:
@@ -156,6 +170,18 @@ def _validate_node(
     elif node.operator is PredicateOperator.FACT_IN:
         for value in node.expected_values:
             _require_literal_type(value, definition, node.operator)
+    elif node.operator is PredicateOperator.MATERIAL_ADDRESS_MATCH:
+        if other_definition is None:
+            raise PredicateContractError(
+                "material_address_match requires two registered facts"
+            )
+        if (
+            definition.value_type not in {"STRING", "ADDRESS"}
+            or other_definition.value_type not in {"STRING", "ADDRESS"}
+        ):
+            raise PredicateContractError(
+                "material_address_match requires STRING or ADDRESS facts"
+            )
     elif node.operator in {
         PredicateOperator.DATE_ON_OR_BEFORE,
         PredicateOperator.DATE_ON_OR_AFTER,

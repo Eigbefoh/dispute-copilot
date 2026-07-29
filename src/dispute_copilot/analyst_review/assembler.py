@@ -14,6 +14,7 @@ from dispute_copilot.analyst_review.errors import (
 )
 from dispute_copilot.analyst_review.guards import AnalystReviewInputs
 from dispute_copilot.analyst_review.models import (
+    AggregationDisplay,
     AnalystReviewPackage,
     CaseSummary,
     DeterministicRationale,
@@ -185,6 +186,13 @@ def assemble_analyst_review_package(
             ),
             advisory_only=True,
         ),
+        "aggregation": (
+            AggregationDisplay(
+                **evaluation.aggregation_summary.model_dump()
+            )
+            if evaluation.aggregation_summary is not None
+            else None
+        ),
         "rationale": rationale,
         "requirement_checklist": tuple(checklist),
         "evidence_gaps": tuple(evidence_gaps),
@@ -343,6 +351,9 @@ def _render_rationale(
     evaluation = inputs.evaluation
     case_snapshot = inputs.case_run.case_snapshot
     values = {
+        "aggregation_summary": _format_aggregation(
+            evaluation.aggregation_summary
+        ),
         "policy_display_name": (
             f"{inputs.selection.scheme.title()} reason code "
             f"{inputs.selection.reason_code} "
@@ -362,6 +373,14 @@ def _render_rationale(
                 for item in inputs.recommendation.causal_requirement_results
             ),
             empty=None,
+        ),
+        "causal_requirement_verb": (
+            "remains"
+            if len(
+                inputs.recommendation.causal_requirement_results
+            )
+            == 1
+            else "remain"
         ),
     }
     rendered: list[str] = []
@@ -409,6 +428,21 @@ def _format_requirement_list(
             + f", and {requirement_ids[-1]}"
         )
     return f"{prefix} {joined}"
+
+
+def _format_aggregation(summary) -> str:
+    if summary is None:
+        return "the stored mandatory-requirement aggregate applies"
+    if summary.mode == "ANY_TWO":
+        return (
+            f"{summary.satisfied_count} routes are satisfied, "
+            f"{summary.maximum_possible_satisfied} could be satisfied, "
+            f"and {summary.minimum_required} are required"
+        )
+    return (
+        f"{summary.satisfied_count} of {summary.applicable_count} "
+        "applicable requirements are satisfied"
+    )
 
 
 def _stable_id(prefix: str, *parts: str) -> str:

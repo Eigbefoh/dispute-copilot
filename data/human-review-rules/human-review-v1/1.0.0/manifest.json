@@ -1,0 +1,80 @@
+{
+  "decision_rules_key": "human-review-v1",
+  "decision_rules_version": "1.0.0",
+  "decision_rules_schema_version": "1.0.0",
+  "recommendation_outcomes": [
+    {
+      "recommendation": "RECOMMEND_REPRESENT",
+      "confirmed_outcome": "REPRESENT"
+    },
+    {
+      "recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+      "confirmed_outcome": "ACCEPT_LIABILITY"
+    },
+    {
+      "recommendation": "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+      "confirmed_outcome": "REQUEST_MORE_EVIDENCE"
+    }
+  ],
+  "permitted_outcomes": [
+    "REPRESENT",
+    "ACCEPT_LIABILITY",
+    "REQUEST_MORE_EVIDENCE"
+  ],
+  "override_reasons": [
+    {
+      "reason_code": "EVIDENCE_INTERPRETATION",
+      "display_label": "Analyst interprets the admitted evidence differently"
+    },
+    {
+      "reason_code": "POLICY_CONTEXT",
+      "display_label": "Additional policy or operational context applies"
+    },
+    {
+      "reason_code": "RISK_JUDGEMENT",
+      "display_label": "Analyst risk judgement differs from the advisory result"
+    },
+    {
+      "reason_code": "OTHER",
+      "display_label": "Other reason explained in the mandatory comment"
+    }
+  ],
+  "workflow_transitions": [
+    {
+      "action": "CONFIRM",
+      "outcome": "REPRESENT",
+      "next_status": "ANALYST_CONFIRMED_REPRESENT"
+    },
+    {
+      "action": "CONFIRM",
+      "outcome": "ACCEPT_LIABILITY",
+      "next_status": "ANALYST_CONFIRMED_ACCEPT_LIABILITY"
+    },
+    {
+      "action": "CONFIRM",
+      "outcome": "REQUEST_MORE_EVIDENCE",
+      "next_status": "MORE_EVIDENCE_REQUESTED"
+    },
+    {
+      "action": "OVERRIDE",
+      "outcome": "REPRESENT",
+      "next_status": "ANALYST_OVERRIDDEN_TO_REPRESENT"
+    },
+    {
+      "action": "OVERRIDE",
+      "outcome": "ACCEPT_LIABILITY",
+      "next_status": "ANALYST_OVERRIDDEN_TO_ACCEPT_LIABILITY"
+    },
+    {
+      "action": "OVERRIDE",
+      "outcome": "REQUEST_MORE_EVIDENCE",
+      "next_status": "MORE_EVIDENCE_REQUESTED"
+    },
+    {
+      "action": "REQUEST_MORE_EVIDENCE",
+      "outcome": "REQUEST_MORE_EVIDENCE",
+      "next_status": "MORE_EVIDENCE_REQUESTED"
+    }
+  ],
+  "integrity_hash": "110555766d47b12155bf3fcb9e5c8747e0a89815879c00fb34f109268f272286"
+}

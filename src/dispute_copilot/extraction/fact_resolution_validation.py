@@ -36,9 +36,6 @@ from dispute_copilot.policy.fact_models import (
     FactDefinition,
 )
 
-SUPPORTED_RULEBOOK_VERSION = "take-home-v2"
-
-
 class FactResolutionValidationError(ValueError):
     """Base error for rejected candidate resolution data."""
 
@@ -170,10 +167,6 @@ def _validate_context(
     if selection.status is not PolicySelectionStatus.READY_FOR_EXTRACTION:
         raise ResolutionContextError(
             "policy selection is not ready for extraction"
-        )
-    if selection.rulebook_version != SUPPORTED_RULEBOOK_VERSION:
-        raise ResolutionContextError(
-            "fact resolution requires take-home-v2 selection"
         )
     if catalogue.rulebook_version != selection.rulebook_version:
         raise ResolutionContextError(
