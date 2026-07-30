@@ -196,12 +196,14 @@ MODEL_PROVIDER=<nebius|openai|anthropic>
 MODEL_NAME=<exact-provider-model-id>
 MODEL_API_KEY=<provider-api-key>
 # MODEL_BASE_URL=<optional-credential-free-api-base-url>
-ANALYST_IDENTITY=<local-analyst-id>
+ANALYST_IDENTITY=vic
 ```
 
 Omit or comment out `MODEL_BASE_URL` to use the registered endpoint for the
 selected provider; do not assign it an empty value. The configured model must
 support image input and the provider adapter's structured-output contract.
+`ANALYST_IDENTITY` may be any non-empty local analyst name; use `vic` if you do
+not need a different identity.
 
 Load the local configuration:
 
