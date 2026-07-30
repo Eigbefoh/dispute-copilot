@@ -1,0 +1,572 @@
+{
+  "contract_schema_version": "source-policy-contracts/1.0.0",
+  "rulebook_version": "take-home-v4",
+  "source_document": "data/rulebooks/take-home-v3/source/reason-codes.pdf",
+  "source_sha256": "32bcc199ee56ecc31b63f5d033d4a36b08dd01a3f6f365accfba85d51f4f18f8",
+  "unresolved_policy_owner_decisions": [
+    "Visa 13.2 notification transaction threshold",
+    "Visa 13.2 notification lead days",
+    "Visa 10.5 liability outcome vocabulary",
+    "Approved product-attribute materiality rules"
+  ],
+  "policies": [
+    {
+      "policy_id": "visa-10.5-take-home-v4",
+      "scheme": "visa",
+      "reason_code": "10.5",
+      "source_aggregation": "EXCEPTION_DEFAULT",
+      "requirements": [
+        {
+          "requirement_id": "V10.5-R1",
+          "source_page": 1,
+          "source_text": "This reason code generally cannot be represented. Recommend accept_liability unless the merchant can prove the transaction was miscoded by the issuer.",
+          "source_structure": "EXCEPTION",
+          "applicability": null,
+          "branches": ["POSITIVE_ISSUER_MISCODING_PROOF"],
+          "examples": [],
+          "example_treatment": "NONE",
+          "semantic_expression": "Authoritative issuer or processor classification conflicts deterministically with the merchant processing classification.",
+          "configuration_blockers": ["liability_outcome_vocabulary"],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Authoritative classifications are present and the approved deterministic rule establishes issuer miscoding."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Authoritative classifications are present and agree that the transaction belongs to the monitoring program."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "The merchant supplies no authoritative classification capable of proving miscoding."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Merchant or issuer classification records conflict internally."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Only one side of the classification comparison is established."}
+          ]
+        }
+      ]
+    },
+    {
+      "policy_id": "visa-12.6.1-take-home-v4",
+      "scheme": "visa",
+      "reason_code": "12.6.1",
+      "source_aggregation": "ALL_APPLICABLE",
+      "requirements": [
+        {
+          "requirement_id": "V12.6.1-R1",
+          "source_page": 2,
+          "source_text": "Evidence the two transactions are for two separate purchases (e.g. different order IDs, different items, different services rendered).",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["DISTINCT_ORDER_IDS", "MATERIALLY_DISTINCT_PURCHASE_DESCRIPTIONS", "OTHER_APPROVED_SEPARATION_ROUTE"],
+          "examples": ["different order IDs", "different items", "different services rendered"],
+          "example_treatment": "ILLUSTRATIVE",
+          "semantic_expression": "At least one approved, paired record route establishes two separate purchases.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Two paired purchase records have distinct order IDs or another independently sufficient separation route."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Paired records establish the same order, item and service event."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "A second purchase record is absent."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Sources disagree about whether the records identify separate purchases."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Two records exist but stable association or distinctness is not established."}
+          ]
+        },
+        {
+          "requirement_id": "V12.6.1-R2",
+          "source_page": 2,
+          "source_text": "Documentation of each purchase event (separate invoices, separate delivery confirmations, separate service dates).",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["DISTINCT_INVOICE_PAIR", "DISTINCT_DELIVERY_CONFIRMATION_PAIR", "DISTINCT_SERVICE_EVENT_PAIR"],
+          "examples": ["separate invoices", "separate delivery confirmations", "separate service dates"],
+          "example_treatment": "ILLUSTRATIVE",
+          "semantic_expression": "At least one adequate document-pair route associates distinct cited records with purchase A and purchase B.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "A cited pair of distinct records is stably associated with the two purchases."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "The same source record is presented as documentation for both purchases."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "Documentation for one purchase is missing."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Record associations conflict across merchant documents."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Two documents exist but one cannot be associated with a specific purchase."}
+          ]
+        },
+        {
+          "requirement_id": "V12.6.1-R3",
+          "source_page": 2,
+          "source_text": "Transaction timestamps and authorisation codes for each charge.",
+          "source_structure": "UNIVERSAL",
+          "applicability": null,
+          "branches": ["PAIRED_CHARGE_A_AND_CHARGE_B_TRANSACTION_DETAILS"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "Both paired charge records contain a timestamp and authorisation code.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Each of two paired charge records has its own timestamp and authorisation code."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "A complete paired record positively lacks a required charge field."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "One charge record or one required field is not available."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Sources conflict on a charge timestamp or authorisation code."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Only one charge has complete transaction details."}
+          ]
+        }
+      ]
+    },
+    {
+      "policy_id": "visa-13.1-take-home-v4",
+      "scheme": "visa",
+      "reason_code": "13.1",
+      "source_aggregation": "ALL_APPLICABLE",
+      "requirements": [
+        {
+          "requirement_id": "V13.1-R1",
+          "source_page": 2,
+          "source_text": "Proof of delivery: tracking number, carrier name, and confirmation of delivery to the cardholder's address.",
+          "source_structure": "UNIVERSAL",
+          "applicability": "MERCHANDISE_DELIVERY",
+          "branches": ["TRACKED_CARRIER_DELIVERY_CONFIRMATION"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "Tracking number, carrier, delivered status and delivery address are established.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Carrier evidence establishes tracking, carrier, delivered status and destination address."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Carrier evidence positively records a non-delivered status."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "A required carrier delivery field is not found."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Carrier records conflict on status or destination."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Tracking and carrier exist but delivery confirmation is incomplete."}
+          ]
+        },
+        {
+          "requirement_id": "V13.1-R2",
+          "source_page": 2,
+          "source_text": "For services: evidence the service was rendered on or before the expected date (booking confirmation, attendance log, access logs).",
+          "source_structure": "CONDITIONAL",
+          "applicability": "PURCHASE_TYPE_IS_SERVICE",
+          "branches": ["ADEQUATE_SERVICE_RECORD_BY_EXPECTED_DATE"],
+          "examples": ["booking confirmation", "attendance log", "access logs"],
+          "example_treatment": "ILLUSTRATIVE",
+          "semantic_expression": "For a service purchase, an adequate service record establishes completion on or before the expected date.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "An adequate cited service record establishes timely completion."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "The service record establishes completion after the expected date or non-completion."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No adequate service record is available."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Service records conflict on completion status or date."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Completion is stated but its date or record identity is not established."}
+          ]
+        },
+        {
+          "requirement_id": "V13.1-R3",
+          "source_page": 2,
+          "source_text": "Date of delivery / service rendered is on or before the chargeback date.",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["DELIVERY_DATE_BY_CHARGEBACK", "SERVICE_DATE_BY_CHARGEBACK"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "The applicable delivery or service date is on or before the chargeback date.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "An applicable completion date is on or before chargeback."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "The applicable completion date is after chargeback."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No applicable completion date is available."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Sources conflict on the applicable completion date."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "A completion event is asserted without an established date."}
+          ]
+        },
+        {
+          "requirement_id": "V13.1-R4",
+          "source_page": 2,
+          "source_text": "The delivery address materially matches the address provided by the cardholder at purchase.",
+          "source_structure": "UNIVERSAL",
+          "applicability": "MERCHANDISE_DELIVERY",
+          "branches": ["MATERIAL_PURCHASE_ADDRESS_MATCH"],
+          "examples": [],
+          "example_treatment": "NONE",
+          "semantic_expression": "A versioned material-address rule matches the delivered-to address with the purchase-supplied address.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Comparable address components materially match."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Comparable material address components conflict."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "One address is missing or lacks comparable components."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Multiple source addresses conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Only non-material components can be compared."}
+          ]
+        }
+      ]
+    },
+    {
+      "policy_id": "visa-13.2-take-home-v4",
+      "scheme": "visa",
+      "reason_code": "13.2",
+      "source_aggregation": "ALL_APPLICABLE",
+      "requirements": [
+        {
+          "requirement_id": "V13.2-R1",
+          "source_page": 2,
+          "source_text": "Terms of service disclosing the recurring billing arrangement and the cancellation method.",
+          "source_structure": "UNIVERSAL",
+          "applicability": null,
+          "branches": ["RECURRING_TERMS_AND_CANCELLATION_METHOD"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "Both recurring billing terms and cancellation method are established.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Cited terms disclose recurring billing and a cancellation method."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "The cited terms positively omit or contradict one required disclosure."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "The terms or cancellation method are unavailable."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Different merchant terms conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Only one of recurring billing or cancellation method is established."}
+          ]
+        },
+        {
+          "requirement_id": "V13.2-R2",
+          "source_page": 2,
+          "source_text": "Evidence the cardholder was notified of the upcoming charge (typically 7+ days in advance) for transactions over a defined threshold.",
+          "source_structure": "CONDITIONAL",
+          "applicability": "TRANSACTION_EXCEEDS_CONFIGURED_NOTIFICATION_THRESHOLD",
+          "branches": ["ADVANCE_NOTIFICATION"],
+          "examples": ["typically 7+ days in advance"],
+          "example_treatment": "ILLUSTRATIVE",
+          "semantic_expression": "When configured applicability is true, notification is sent by the configured lead-time deadline.",
+          "configuration_blockers": ["notification_transaction_threshold", "notification_lead_days"],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Approved threshold and lead-time configuration applies and timely notice is established."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Applicable notification evidence establishes that notice was sent after the configured deadline."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "Notification evidence or required approved configuration is missing."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Notification records conflict on date or content."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Notification is established but its timing is not."}
+          ]
+        },
+        {
+          "requirement_id": "V13.2-R3",
+          "source_page": 3,
+          "source_text": "No record of the cardholder having submitted a cancellation request prior to the billing date.",
+          "source_structure": "UNIVERSAL",
+          "applicability": null,
+          "branches": ["SCOPED_PREBILLING_SEARCH_WITH_ZERO_RESULTS"],
+          "examples": [],
+          "example_treatment": "NONE",
+          "semantic_expression": "A positive record-search assertion covers the relevant period and reports zero pre-billing cancellation requests.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "A complete scoped search through billing reports zero requests."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "A complete scoped search reports one or more pre-billing requests."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No positive scoped search assertion is supplied."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Search assertions conflict on coverage or result count."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "A zero result is asserted but search coverage is incomplete."}
+          ]
+        },
+        {
+          "requirement_id": "V13.2-R4",
+          "source_page": 3,
+          "source_text": "Evidence of the cardholder's original opt-in to the recurring arrangement.",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["AUTHENTICATED_CHECKBOX_OPT_IN", "SIGNED_RECURRING_AGREEMENT", "PAIRED_OPT_IN_DATE_AND_METHOD"],
+          "examples": [],
+          "example_treatment": "NONE",
+          "semantic_expression": "At least one adequate authenticated opt-in record is established.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "One approved source-backed opt-in route is complete."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "An authoritative record establishes that the cardholder did not opt in."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No authenticated opt-in record is available."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Opt-in records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "An opt-in event is asserted without adequate authentication or record identity."}
+          ]
+        }
+      ]
+    },
+    {
+      "policy_id": "visa-13.3-take-home-v4",
+      "scheme": "visa",
+      "reason_code": "13.3",
+      "source_aggregation": "ALL_APPLICABLE",
+      "requirements": [
+        {
+          "requirement_id": "V13.3-R1",
+          "source_page": 3,
+          "source_text": "The merchant's published description of the item the cardholder purchased.",
+          "source_structure": "UNIVERSAL",
+          "applicability": null,
+          "branches": ["SOURCE_QUALIFIED_PUBLISHED_DESCRIPTION"],
+          "examples": [],
+          "example_treatment": "NONE",
+          "semantic_expression": "A source-qualified published description is established.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "A cited merchant listing identifies the purchased item and its description."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "An authoritative merchant record establishes that no published description applied to the purchase."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No applicable published description is supplied."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Multiple applicable published descriptions conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "A description exists but cannot be associated with the purchased item."}
+          ]
+        },
+        {
+          "requirement_id": "V13.3-R2",
+          "source_page": 3,
+          "source_text": "Evidence the item delivered matches that description (photos, specs, serial number match).",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["MATERIAL_DESCRIPTION_MATCH", "DELIVERED_SPECIFICATION_MATCH", "APPLICABLE_SERIAL_NUMBER_MATCH"],
+          "examples": ["photos", "specifications", "serial number match"],
+          "example_treatment": "ILLUSTRATIVE",
+          "semantic_expression": "At least one adequate comparison route establishes a delivered-item-to-published-description match.",
+          "configuration_blockers": ["approved_product_attribute_materiality_rules"],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "An approved route compares source-qualified published and delivered attributes and establishes a material match."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Comparable applicable attributes or serial identities materially mismatch."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No adequate comparison route has both operands."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Comparison routes or underlying source attributes conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "A front-view photograph establishes some attributes but cannot address the alleged defect or complete a material comparison."}
+          ]
+        },
+        {
+          "requirement_id": "V13.3-R3",
+          "source_page": 3,
+          "source_text": "Evidence the merchant offered a return/refund route and the cardholder did not use it, OR evidence the cardholder used and retained the merchandise after raising the complaint.",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["RETURN_ROUTE_AND_PROVEN_NON_USE", "POST_COMPLAINT_USE_AND_RETENTION"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "Either a return route plus positive scoped zero-use evidence, or post-complaint use plus retention, is established.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Either independent source branch is completely established."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Complete records establish return-route use and no post-complaint use/retention branch."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "Neither branch has enough positive evidence; absence of a request record is not treated as non-use."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Return search, usage or retention records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "One or both branches are partly established but neither is complete."}
+          ]
+        }
+      ]
+    },
+    {
+      "policy_id": "mastercard-4837-take-home-v4",
+      "scheme": "mastercard",
+      "reason_code": "4837",
+      "source_aggregation": "ANY_TWO",
+      "requirements": [
+        {
+          "requirement_id": "MC4837-R1",
+          "source_page": 4,
+          "source_text": "AVS match (full address) AND CVV match on the disputed transaction.",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["CASE_TRANSACTION_AVS_AND_CVV", "MERCHANT_RECORD_AVS_AND_CVV"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "At least one authoritative route establishes both a full AVS match and CVV match.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "One authoritative route establishes full AVS and matching CVV."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Authoritative evidence establishes an AVS or CVV mismatch."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "Neither route contains both results."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Authoritative AVS or CVV records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Only AVS or only CVV is established."}
+          ]
+        },
+        {
+          "requirement_id": "MC4837-R2",
+          "source_page": 4,
+          "source_text": "3D Secure authentication completed successfully (Mastercard SecureCode / Identity Check).",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["CASE_THREE_DS_STATUS", "MERCHANT_AUTHENTICATION_RECORD"],
+          "examples": ["Mastercard SecureCode", "Identity Check"],
+          "example_treatment": "ILLUSTRATIVE",
+          "semantic_expression": "At least one authoritative route establishes successful 3D Secure authentication.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "One authoritative route records successful authentication."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Authoritative evidence records failed or incomplete authentication."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No authoritative authentication result is available."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Authentication records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "A program is identified but successful completion is not established."}
+          ]
+        },
+        {
+          "requirement_id": "MC4837-R3",
+          "source_page": 4,
+          "source_text": "Two prior undisputed transactions from the same cardholder with this merchant in the past 12 months, with matching billing details.",
+          "source_structure": "UNIVERSAL",
+          "applicability": null,
+          "branches": ["COUNT_TWO_QUALIFYING_PRIOR_TRANSACTION_RECORDS"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "COUNT_WHERE over paired prior-transaction records is at least two.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "At least two distinct paired records are undisputed, in-period and materially address-matched."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Complete records establish fewer than two qualifying transactions."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "The prior-transaction record set is absent or its completeness is not established."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Qualifying fields conflict within one or more records."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Two records exist but one has unresolved date, dispute status or billing details."}
+          ]
+        },
+        {
+          "requirement_id": "MC4837-R4",
+          "source_page": 4,
+          "source_text": "Proof of delivery to the cardholder's billing address with signature.",
+          "source_structure": "UNIVERSAL",
+          "applicability": null,
+          "branches": ["SIGNED_BILLING_ADDRESS_DELIVERY"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "Delivered status, material billing-address match and signature are established.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Carrier evidence establishes signed delivery to the materially matching billing address."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Complete carrier evidence establishes non-delivery or a material address mismatch."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "Delivery, address or signature evidence is missing."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Carrier delivery records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Delivery is established but signature or address comparison is not."}
+          ]
+        }
+      ]
+    },
+    {
+      "policy_id": "mastercard-4855-take-home-v4",
+      "scheme": "mastercard",
+      "reason_code": "4855",
+      "source_aggregation": "ALL_APPLICABLE",
+      "requirements": [
+        {
+          "requirement_id": "MC4855-R1",
+          "source_page": 4,
+          "source_text": "Proof of delivery (tracking + carrier confirmation) or proof of service rendered (access logs, attendance, completed booking).",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["TRACKED_CARRIER_DELIVERY", "ADEQUATE_SERVICE_RECORD"],
+          "examples": ["access logs", "attendance", "completed booking"],
+          "example_treatment": "ILLUSTRATIVE",
+          "semantic_expression": "Either tracked carrier delivery or an adequate cited service record establishes provision.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "One complete delivery or service branch is established."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Complete evidence establishes non-delivery and non-provision."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "Neither branch has adequate evidence."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Delivery or service records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "One branch is partly established but neither is complete."}
+          ]
+        },
+        {
+          "requirement_id": "MC4855-R2",
+          "source_page": 4,
+          "source_text": "Date of delivery / service is before the chargeback date.",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["DELIVERY_DATE_BEFORE_CHARGEBACK", "SERVICE_DATE_BEFORE_CHARGEBACK"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "The applicable provision date precedes chargeback.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "An applicable delivery or service date is before chargeback."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "The applicable date is on or after the disallowed boundary."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No applicable provision date is available."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Provision dates conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Provision is asserted without a reliable date."}
+          ]
+        },
+        {
+          "requirement_id": "MC4855-R3",
+          "source_page": 4,
+          "source_text": "Delivery address matches the cardholder's records.",
+          "source_structure": "ALTERNATIVE",
+          "applicability": "DELIVERY_BRANCH",
+          "branches": ["MATERIAL_BILLING_ADDRESS_MATCH", "MATERIAL_OTHER_AUTHORIZED_ADDRESS_MATCH"],
+          "examples": [],
+          "example_treatment": "NONE",
+          "semantic_expression": "At least one source-authorized cardholder address materially matches the delivery address.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "A versioned material-address comparison matches an authoritative cardholder address."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Comparable material address components mismatch every authorized record."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No comparable authoritative address pair is available."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Authorized address records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Only non-material or incomplete address components can be compared."}
+          ]
+        }
+      ]
+    },
+    {
+      "policy_id": "mastercard-4859-take-home-v4",
+      "scheme": "mastercard",
+      "reason_code": "4859",
+      "source_aggregation": "ALL_APPLICABLE",
+      "requirements": [
+        {
+          "requirement_id": "MC4859-R1",
+          "source_page": 5,
+          "source_text": "Evidence of the cardholder's original reservation or booking.",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["ADEQUATE_RESERVATION_RECORD", "ADEQUATE_BOOKING_RECORD"],
+          "examples": [],
+          "example_treatment": "NONE",
+          "semantic_expression": "An adequate cited record identifies the reservation and scheduled service.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "A cited booking record identifies the reservation and scheduled service."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "An authoritative record establishes that no reservation existed for the charge."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "No adequate booking record is available."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Booking records conflict on identity or service."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "A record identifies a customer or date but not a stable reservation and scheduled service."}
+          ]
+        },
+        {
+          "requirement_id": "MC4859-R2",
+          "source_page": 5,
+          "source_text": "The merchant's no-show / cancellation policy as disclosed at booking.",
+          "source_structure": "UNIVERSAL",
+          "applicability": null,
+          "branches": ["POLICY_DISCLOSED_NO_LATER_THAN_BOOKING"],
+          "examples": [],
+          "example_treatment": "NONE",
+          "semantic_expression": "The policy is established and its disclosure datetime is on or before booking datetime.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Cited policy disclosure occurred on or before booking."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Disclosure occurred after booking."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "Policy or comparable disclosure/booking datetime is missing."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Policy disclosure records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "The policy is present but timing of disclosure is not established."}
+          ]
+        },
+        {
+          "requirement_id": "MC4859-R3",
+          "source_page": 5,
+          "source_text": "Evidence the cardholder either failed to show or cancelled outside the policy window.",
+          "source_structure": "ALTERNATIVE",
+          "applicability": null,
+          "branches": ["NO_SHOW", "CANCELLATION_AFTER_POLICY_CUTOFF"],
+          "examples": [],
+          "example_treatment": "SOURCE_CONDITIONS",
+          "semantic_expression": "Either no-show is established or cancellation datetime is later than service datetime minus the policy window.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "No-show is established or a complete calculated cutoff comparison proves late cancellation."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Attendance or a cancellation within the allowed window is established."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "Neither attendance nor all cutoff-comparison operands are available."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Attendance, cancellation or policy-window records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "A cancellation exists but the service datetime or policy window is unresolved."}
+          ]
+        },
+        {
+          "requirement_id": "MC4859-R4",
+          "source_page": 5,
+          "source_text": "Evidence the fee charged matches the policy disclosed.",
+          "source_structure": "UNIVERSAL",
+          "applicability": null,
+          "branches": ["EXACT_FEE_AMOUNT_AND_CURRENCY_MATCH"],
+          "examples": [],
+          "example_treatment": "NONE",
+          "semantic_expression": "Charged and disclosed fee amounts and currencies match exactly.",
+          "configuration_blockers": [],
+          "scenarios": [
+            {"scenario_kind": "POSITIVE", "expected_truth": "TRUE", "description": "Charged and policy fee amount and currency match."},
+            {"scenario_kind": "NEGATIVE", "expected_truth": "FALSE", "description": "Complete records establish an amount or currency mismatch."},
+            {"scenario_kind": "MISSING", "expected_truth": "UNKNOWN", "description": "A charged or disclosed fee operand is missing."},
+            {"scenario_kind": "CONFLICTING", "expected_truth": "UNKNOWN", "description": "Fee records conflict."},
+            {"scenario_kind": "PARTIAL", "expected_truth": "UNKNOWN", "description": "Only amount or only currency can be compared."}
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -358,6 +358,70 @@ grounded bounding boxes. The interface therefore renders native PDF support as
 fabricates a precise highlight for the CB-2025-0006 delivery photo. See
 `docs/human-review-ui.md` for operation and limitations.
 
+## Multi-case analyst demo
+
+The multi-case demo is a thin UI over the application service. It lists all
+cases from `data/cases.json`, creates one independent immutable lineage per
+attempt, persists per-case progress, continues after individual failures, and
+loads completed review packages without rerunning them.
+
+For a live demo, configure the generic provider variables and trusted local
+analyst identity. Keep the credential in an ignored local environment file;
+never add it to the repository or command history.
+
+```bash
+export MODEL_PROVIDER="nebius"
+export MODEL_NAME="<exact-model-id>"
+export MODEL_API_KEY="<secret>"
+export MODEL_BASE_URL="https://api.tokenfactory.nebius.com/v1/"
+export ANALYST_IDENTITY="<local-analyst-id>"
+
+python -m dispute_copilot.application.demo \
+  --mode live \
+  --database data/demo-validation.db
+```
+
+`Run Selected Case` and `Run All Cases` invoke the same application backend.
+Batch execution is sequential. A failed case is recorded as `FAILED` with a
+sanitised diagnostic and the next case still runs. Explicit retry creates a new
+attempt and a new immutable upstream lineage.
+
+To inspect genuine persisted results without a model provider or network:
+
+```bash
+export ANALYST_IDENTITY="<local-analyst-id>"
+
+python -m dispute_copilot.application.demo \
+  --mode cached \
+  --database data/demo-validation.db
+```
+
+Cached mode disables both run controls and labels persisted output as a cached
+result. It does not synthesize packages or silently make provider calls.
+For an immediately inspectable deterministic fixture-backed presentation, use
+the frozen baseline database instead:
+
+```bash
+python -m dispute_copilot.application.demo \
+  --mode cached \
+  --database data/baselines/live-extraction-validation-v1/fixture-demo.db
+```
+
+That baseline contains genuine persisted fixture-backed packages for cases
+0001–0004; cases 0005–0010 correctly remain `NOT_RUN`. The UI reads this
+protected database without adding application tables or changing its bytes.
+Successful extraction records expose provider, model, adapter, prompt version,
+schema version and non-secret parameters through technical lineage. Request
+latency, token usage and estimated cost are currently shown as `NOT RECORDED`.
+
+The demo currently defaults to the preserved `take-home-v3` pipeline. Its known
+critical policy limitations are documented in
+`docs/critical-policy-demo-feasibility.json`. A corrected
+`take-home-v4-demo` is intentionally blocked until the structured-fact,
+product-materiality and Visa 10.5 outcome gates in that assessment are
+approved. The UI must therefore not be presented as proof of corrected
+all-case policy fidelity yet.
+
 The cross-case acceptance suite proves the same implementation against:
 
 | Case | Policy | Recommendation |
@@ -402,5 +466,7 @@ pytest -q
   assembly without workflow progression.
 - `human_review`: Integrity-checked evidence presentation, local Gradio review,
   and append-only human decisions with atomic workflow events.
+- `application`: Stable case catalogue, isolated live execution, persistent
+  batch progress, cached retrieval and multi-case demo entry point.
 - `data`: Local development data and evidence.
 - `tests`: Automated tests.
