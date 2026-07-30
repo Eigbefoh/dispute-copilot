@@ -1,0 +1,566 @@
+{
+  "document_id": "reason-codes-take-home-v3",
+  "rulebook_version": "take-home-v3",
+  "source_file": "reason-codes.pdf",
+  "source_sha256": "32bcc199ee56ecc31b63f5d033d4a36b08dd01a3f6f365accfba85d51f4f18f8",
+  "page_count": 7,
+  "line_count": 111,
+  "line_id_convention": "P{page:03d}-L{logical_line:03d}; logical line numbers reset on each page; wrapped visual lines are joined",
+  "lines": [
+    {
+      "line_id": "P001-L001",
+      "page": 1,
+      "text": "Chargeback Reason Codes - Simplified Compelling Evidence Requirements"
+    },
+    {
+      "line_id": "P001-L002",
+      "page": 1,
+      "text": "Important: These are simplified for the purposes of this exercise. Real Visa VCR and Mastercard Chargeback Guide rules are substantially more complex, have time limits, dollar thresholds, exclusions, and updated regularly. Do not use this file as a reference outside this take-home."
+    },
+    {
+      "line_id": "P001-L003",
+      "page": 1,
+      "text": "For each reason code below, the \"Compelling Evidence Requirements\" list defines what the merchant must provide for us to have a defensible representment. To recommend represent, your tool should find evidence covering all required items (or a clearly documented majority - your call how to handle partials)."
+    },
+    {
+      "line_id": "P001-L004",
+      "page": 1,
+      "text": "Visa Reason Codes"
+    },
+    {
+      "line_id": "P001-L005",
+      "page": 1,
+      "text": "Visa 10.4 - Other Fraud, Card Absent Environment"
+    },
+    {
+      "line_id": "P001-L006",
+      "page": 1,
+      "text": "Issuer claim: Cardholder denies authorising a card-not-present transaction."
+    },
+    {
+      "line_id": "P001-L007",
+      "page": 1,
+      "text": "Compelling evidence requirements (any TWO of the following):"
+    },
+    {
+      "line_id": "P001-L008",
+      "page": 1,
+      "text": "1. Evidence the cardholder used the same card and same shipping address in two prior undisputed transactions with this merchant, completed more than 120 days but less than 365 days before the disputed transaction"
+    },
+    {
+      "line_id": "P001-L009",
+      "page": 1,
+      "text": "2. Evidence the cardholder is in possession of and using the merchandise (e.g. signed-in account activity post-delivery, social media post tagging the merchant)"
+    },
+    {
+      "line_id": "P001-L010",
+      "page": 1,
+      "text": "3. For digital goods: device fingerprint, IP address, geolocation, and customer account login matching prior undisputed transactions"
+    },
+    {
+      "line_id": "P001-L011",
+      "page": 1,
+      "text": "4. Proof of delivery to the cardholder's verified billing address (not just shipping address) with signature confirmation"
+    },
+    {
+      "line_id": "P001-L012",
+      "page": 1,
+      "text": "Visa 10.5 - Visa Fraud Monitoring Program"
+    },
+    {
+      "line_id": "P001-L013",
+      "page": 1,
+      "text": "Issuer claim: Transaction flagged under Visa's fraud monitoring program. Note: This reason code generally cannot be represented. Recommend accept_liability unless the merchant can prove the transaction was miscoded by the issuer."
+    },
+    {
+      "line_id": "P001-L014",
+      "page": 1,
+      "text": "Visa 12.5 - Incorrect Amount"
+    },
+    {
+      "line_id": "P001-L015",
+      "page": 1,
+      "text": "Issuer claim: The amount charged does not match the amount the cardholder authorised."
+    },
+    {
+      "line_id": "P002-L001",
+      "page": 2,
+      "text": "Compelling evidence requirements (ALL of the following):"
+    },
+    {
+      "line_id": "P002-L002",
+      "page": 2,
+      "text": "1. The signed receipt, terms of service, or order confirmation showing the amount the cardholder agreed to"
+    },
+    {
+      "line_id": "P002-L003",
+      "page": 2,
+      "text": "2. Documentation showing the amount charged matches that agreed amount"
+    },
+    {
+      "line_id": "P002-L004",
+      "page": 2,
+      "text": "3. If a tip, gratuity, or adjustment was added, evidence the cardholder authorised it"
+    },
+    {
+      "line_id": "P002-L005",
+      "page": 2,
+      "text": "Visa 12.6.1 - Duplicate Processing"
+    },
+    {
+      "line_id": "P002-L006",
+      "page": 2,
+      "text": "Issuer claim: The same transaction was processed more than once."
+    },
+    {
+      "line_id": "P002-L007",
+      "page": 2,
+      "text": "Compelling evidence requirements (ALL of the following):"
+    },
+    {
+      "line_id": "P002-L008",
+      "page": 2,
+      "text": "1. Evidence the two transactions are for two separate purchases (e.g. different order IDs, different items, different services rendered)"
+    },
+    {
+      "line_id": "P002-L009",
+      "page": 2,
+      "text": "2. Documentation of each purchase event (separate invoices, separate delivery confirmations, separate service dates)"
+    },
+    {
+      "line_id": "P002-L010",
+      "page": 2,
+      "text": "3. Transaction timestamps and authorisation codes for each charge"
+    },
+    {
+      "line_id": "P002-L011",
+      "page": 2,
+      "text": "Visa 13.1 - Merchandise / Services Not Received"
+    },
+    {
+      "line_id": "P002-L012",
+      "page": 2,
+      "text": "Issuer claim: Cardholder paid but never received the goods or services."
+    },
+    {
+      "line_id": "P002-L013",
+      "page": 2,
+      "text": "Compelling evidence requirements (ALL of the following):"
+    },
+    {
+      "line_id": "P002-L014",
+      "page": 2,
+      "text": "1. Proof of delivery: tracking number, carrier name, and confirmation of delivery to the cardholder's address"
+    },
+    {
+      "line_id": "P002-L015",
+      "page": 2,
+      "text": "2. For services: evidence the service was rendered on or before the expected date (booking confirmation, attendance log, access logs)"
+    },
+    {
+      "line_id": "P002-L016",
+      "page": 2,
+      "text": "3. Date of delivery / service rendered is on or before the chargeback date"
+    },
+    {
+      "line_id": "P002-L017",
+      "page": 2,
+      "text": "4. The delivery address materially matches the address provided by the cardholder at purchase"
+    },
+    {
+      "line_id": "P002-L018",
+      "page": 2,
+      "text": "Visa 13.2 - Cancelled Recurring Transaction"
+    },
+    {
+      "line_id": "P002-L019",
+      "page": 2,
+      "text": "Issuer claim: Cardholder cancelled a recurring subscription but was still charged."
+    },
+    {
+      "line_id": "P002-L020",
+      "page": 2,
+      "text": "Compelling evidence requirements (ALL of the following):"
+    },
+    {
+      "line_id": "P002-L021",
+      "page": 2,
+      "text": "1. Terms of service disclosing the recurring billing arrangement and the cancellation method"
+    },
+    {
+      "line_id": "P002-L022",
+      "page": 2,
+      "text": "2. Evidence the cardholder was notified of the upcoming charge (typically 7+ days in advance) for transactions over a defined threshold"
+    },
+    {
+      "line_id": "P003-L001",
+      "page": 3,
+      "text": "3. No record of the cardholder having submitted a cancellation request prior to the billing date"
+    },
+    {
+      "line_id": "P003-L002",
+      "page": 3,
+      "text": "4. Evidence of the cardholder's original opt-in to the recurring arrangement"
+    },
+    {
+      "line_id": "P003-L003",
+      "page": 3,
+      "text": "Visa 13.3 - Not as Described or Defective Merchandise"
+    },
+    {
+      "line_id": "P003-L004",
+      "page": 3,
+      "text": "Issuer claim: Cardholder received the goods but they are materially not as described or defective."
+    },
+    {
+      "line_id": "P003-L005",
+      "page": 3,
+      "text": "Compelling evidence requirements (ALL of the following):"
+    },
+    {
+      "line_id": "P003-L006",
+      "page": 3,
+      "text": "1. The merchant's published description of the item the cardholder purchased"
+    },
+    {
+      "line_id": "P003-L007",
+      "page": 3,
+      "text": "2. Evidence the item delivered matches that description (photos, specs, serial number match)"
+    },
+    {
+      "line_id": "P003-L008",
+      "page": 3,
+      "text": "3. Evidence the merchant offered a return/refund route and the cardholder did not use it, OR evidence the cardholder used and retained the merchandise after raising the complaint"
+    },
+    {
+      "line_id": "P003-L009",
+      "page": 3,
+      "text": "Visa 13.6 - Credit Not Processed"
+    },
+    {
+      "line_id": "P003-L010",
+      "page": 3,
+      "text": "Issuer claim: The merchant agreed to a refund but never processed it."
+    },
+    {
+      "line_id": "P003-L011",
+      "page": 3,
+      "text": "Compelling evidence requirements:"
+    },
+    {
+      "line_id": "P003-L012",
+      "page": 3,
+      "text": "- Either evidence that a refund was processed (refund transaction ID, date, amount), OR"
+    },
+    {
+      "line_id": "P003-L013",
+      "page": 3,
+      "text": "- Evidence that no refund was ever agreed (merchant's refund policy and absence of any refund commitment in cardholder communications)"
+    },
+    {
+      "line_id": "P003-L014",
+      "page": 3,
+      "text": "Visa 13.7 - Cancelled Merchandise / Services"
+    },
+    {
+      "line_id": "P003-L015",
+      "page": 3,
+      "text": "Issuer claim: Cardholder cancelled the purchase per the merchant's policy but was charged."
+    },
+    {
+      "line_id": "P003-L016",
+      "page": 3,
+      "text": "Compelling evidence requirements (ALL of the following):"
+    },
+    {
+      "line_id": "P003-L017",
+      "page": 3,
+      "text": "1. The merchant's cancellation policy as displayed at point of sale"
+    },
+    {
+      "line_id": "P003-L018",
+      "page": 3,
+      "text": "2. Evidence the cardholder agreed to that policy (e.g. checkbox click record, signed terms)"
+    },
+    {
+      "line_id": "P003-L019",
+      "page": 3,
+      "text": "3. Evidence the cardholder either did not cancel within the policy window, or cancelled outside the refundable period"
+    },
+    {
+      "line_id": "P004-L001",
+      "page": 4,
+      "text": "Mastercard Reason Codes"
+    },
+    {
+      "line_id": "P004-L002",
+      "page": 4,
+      "text": "Mastercard 4837 - No Cardholder Authorisation"
+    },
+    {
+      "line_id": "P004-L003",
+      "page": 4,
+      "text": "Issuer claim: Cardholder denies authorising the transaction (card-not-present fraud equivalent)."
+    },
+    {
+      "line_id": "P004-L004",
+      "page": 4,
+      "text": "Compelling evidence requirements (any TWO of the following):"
+    },
+    {
+      "line_id": "P004-L005",
+      "page": 4,
+      "text": "1. AVS match (full address) AND CVV match on the disputed transaction"
+    },
+    {
+      "line_id": "P004-L006",
+      "page": 4,
+      "text": "2. 3D Secure authentication completed successfully (Mastercard SecureCode / Identity Check)"
+    },
+    {
+      "line_id": "P004-L007",
+      "page": 4,
+      "text": "3. Two prior undisputed transactions from the same cardholder with this merchant in the past 12 months, with matching billing details"
+    },
+    {
+      "line_id": "P004-L008",
+      "page": 4,
+      "text": "4. Proof of delivery to the cardholder's billing address with signature"
+    },
+    {
+      "line_id": "P004-L009",
+      "page": 4,
+      "text": "Mastercard 4853 - Cardholder Dispute (Goods / Services Not Provided)"
+    },
+    {
+      "line_id": "P004-L010",
+      "page": 4,
+      "text": "Issuer claim: Goods or services were not provided as agreed."
+    },
+    {
+      "line_id": "P004-L011",
+      "page": 4,
+      "text": "Compelling evidence requirements (ALL of the following):"
+    },
+    {
+      "line_id": "P004-L012",
+      "page": 4,
+      "text": "1. Proof of delivery or service provision (tracking, confirmation, access log)"
+    },
+    {
+      "line_id": "P004-L013",
+      "page": 4,
+      "text": "2. Evidence the goods or services materially match what was advertised"
+    },
+    {
+      "line_id": "P004-L014",
+      "page": 4,
+      "text": "3. Either: no contact from the cardholder attempting to resolve the issue before the chargeback, OR documentation showing the merchant attempted resolution and the cardholder refused"
+    },
+    {
+      "line_id": "P004-L015",
+      "page": 4,
+      "text": "Mastercard 4855 - Goods / Services Not Provided"
+    },
+    {
+      "line_id": "P004-L016",
+      "page": 4,
+      "text": "Issuer claim: Specifically: paid for goods or services that were never delivered or rendered."
+    },
+    {
+      "line_id": "P004-L017",
+      "page": 4,
+      "text": "Compelling evidence requirements (ALL of the following):"
+    },
+    {
+      "line_id": "P004-L018",
+      "page": 4,
+      "text": "1. Proof of delivery (tracking + carrier confirmation) or proof of service rendered (access logs, attendance, completed booking)"
+    },
+    {
+      "line_id": "P004-L019",
+      "page": 4,
+      "text": "2. Date of delivery / service is before the chargeback date"
+    },
+    {
+      "line_id": "P004-L020",
+      "page": 4,
+      "text": "3. Delivery address matches the cardholder's records"
+    },
+    {
+      "line_id": "P005-L001",
+      "page": 5,
+      "text": "Mastercard 4863 - Cardholder Does Not Recognise - Potential Fraud"
+    },
+    {
+      "line_id": "P005-L002",
+      "page": 5,
+      "text": "Issuer claim: Cardholder does not recognise the transaction (may not actually be fraud - could just be a confusing descriptor)."
+    },
+    {
+      "line_id": "P005-L003",
+      "page": 5,
+      "text": "Compelling evidence requirements (ANY ONE of the following):"
+    },
+    {
+      "line_id": "P005-L004",
+      "page": 5,
+      "text": "1. Evidence the merchant's billing descriptor matches the merchant name the cardholder would recognise"
+    },
+    {
+      "line_id": "P005-L005",
+      "page": 5,
+      "text": "2. AVS + CVV match on the disputed transaction"
+    },
+    {
+      "line_id": "P005-L006",
+      "page": 5,
+      "text": "3. Prior undisputed transactions from the same cardholder with this merchant"
+    },
+    {
+      "line_id": "P005-L007",
+      "page": 5,
+      "text": "4. Cardholder's IP / device / account login matching prior undisputed sessions"
+    },
+    {
+      "line_id": "P005-L008",
+      "page": 5,
+      "text": "Mastercard 4859 - No-Show / Addendum"
+    },
+    {
+      "line_id": "P005-L009",
+      "page": 5,
+      "text": "Issuer claim: Cardholder was charged a no-show fee, late cancellation fee, or addendum charge (common in hospitality, car rental, travel) that they dispute."
+    },
+    {
+      "line_id": "P005-L010",
+      "page": 5,
+      "text": "Compelling evidence requirements (ALL of the following):"
+    },
+    {
+      "line_id": "P005-L011",
+      "page": 5,
+      "text": "1. Evidence of the cardholder's original reservation or booking"
+    },
+    {
+      "line_id": "P005-L012",
+      "page": 5,
+      "text": "2. The merchant's no-show / cancellation policy as disclosed at booking"
+    },
+    {
+      "line_id": "P005-L013",
+      "page": 5,
+      "text": "3. Evidence the cardholder either failed to show or cancelled outside the policy window"
+    },
+    {
+      "line_id": "P005-L014",
+      "page": 5,
+      "text": "4. Evidence the fee charged matches the policy disclosed"
+    },
+    {
+      "line_id": "P005-L015",
+      "page": 5,
+      "text": "Mastercard 4870 - Chip Liability Shift"
+    },
+    {
+      "line_id": "P005-L016",
+      "page": 5,
+      "text": "Issuer claim: Counterfeit card used at a non-chip-enabled terminal (card-present only). Note: This is a card-present reason code. For an acquiring CNP-focused exercise, expect to see accept_liability for this - we'd flag the merchant for terminal upgrade and move on."
+    },
+    {
+      "line_id": "P005-L017",
+      "page": 5,
+      "text": "Quick Reference Table"
+    },
+    {
+      "line_id": "P005-L018",
+      "page": 5,
+      "text": "Code | Scheme | Type | Common Outcome"
+    },
+    {
+      "line_id": "P005-L019",
+      "page": 5,
+      "text": "10.4 | Visa | CNP Fraud | Represent if prior history + delivery"
+    },
+    {
+      "line_id": "P005-L020",
+      "page": 5,
+      "text": "10.5 | Visa | Fraud monitoring | Accept (rarely defensible)"
+    },
+    {
+      "line_id": "P006-L001",
+      "page": 6,
+      "text": "Code | Scheme | Type | Common Outcome"
+    },
+    {
+      "line_id": "P006-L002",
+      "page": 6,
+      "text": "12.5 | Visa | Incorrect amount | Represent with receipt"
+    },
+    {
+      "line_id": "P006-L003",
+      "page": 6,
+      "text": "12.6.1 | Visa | Duplicate | Represent if two distinct purchases"
+    },
+    {
+      "line_id": "P006-L004",
+      "page": 6,
+      "text": "13.1 | Visa | Not received | Represent with delivery proof"
+    },
+    {
+      "line_id": "P006-L005",
+      "page": 6,
+      "text": "13.2 | Visa | Cancelled recurring | Represent with opt-in + no cancel record"
+    },
+    {
+      "line_id": "P006-L006",
+      "page": 6,
+      "text": "13.3 | Visa | Not as described | Represent if item matches description"
+    },
+    {
+      "line_id": "P006-L007",
+      "page": 6,
+      "text": "13.6 | Visa | Credit not processed | Represent with refund record"
+    },
+    {
+      "line_id": "P006-L008",
+      "page": 6,
+      "text": "13.7 | Visa | Cancelled merchandise | Represent with policy + agreement"
+    },
+    {
+      "line_id": "P006-L009",
+      "page": 6,
+      "text": "4837 | Mastercard | CNP Fraud | Represent with AVS+CVV / 3DS / history"
+    },
+    {
+      "line_id": "P006-L010",
+      "page": 6,
+      "text": "4853 | Mastercard | Goods/services dispute | Represent with proof + resolution attempt"
+    },
+    {
+      "line_id": "P006-L011",
+      "page": 6,
+      "text": "4855 | Mastercard | Not provided | Represent with delivery / service proof"
+    },
+    {
+      "line_id": "P006-L012",
+      "page": 6,
+      "text": "4859 | Mastercard | No-show / addendum | Represent with booking + policy + non-attendance"
+    },
+    {
+      "line_id": "P006-L013",
+      "page": 6,
+      "text": "4863 | Mastercard | Unrecognised | Represent with descriptor or prior history"
+    },
+    {
+      "line_id": "P007-L001",
+      "page": 7,
+      "text": "Code | Scheme | Type | Common Outcome"
+    },
+    {
+      "line_id": "P007-L002",
+      "page": 7,
+      "text": "4870 | Mastercard | Chip liability shift | Accept (card-present, terminal issue)"
+    }
+  ]
+}

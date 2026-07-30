@@ -14,7 +14,7 @@ from dispute_copilot.analyst_review.presentation_models import (
 DEFAULT_PRESENTATION_RULES_ROOT = Path("data/presentation-rules")
 SUPPORTED_PRESENTATION_SCHEMA_VERSION = "1.0.0"
 DEFAULT_PRESENTATION_RULES_KEY = "analyst-review-package-v1"
-DEFAULT_PRESENTATION_RULES_VERSION = "1.0.0"
+DEFAULT_PRESENTATION_RULES_VERSION = "1.2.0"
 
 
 def load_presentation_rules(

@@ -42,6 +42,8 @@ def evaluation(
     statuses: tuple[RequirementStatus, ...],
     *,
     overall: OverallEvaluationStatus | None = None,
+    policy_id: str = "test-policy",
+    rulebook_version: str = "test-v1",
 ) -> RequirementEvaluationResult:
     results = tuple(
         RequirementEvaluation(
@@ -84,8 +86,8 @@ def evaluation(
         "run_id": uuid4(),
         "selection_id": uuid4(),
         "resolution_id": uuid4(),
-        "policy_id": "test-policy",
-        "rulebook_version": "test-v1",
+        "policy_id": policy_id,
+        "rulebook_version": rulebook_version,
         "policy_sha256": "a" * 64,
         "fact_resolution_content_hash": "b" * 64,
         "predicate_manifest_sha256": "c" * 64,
@@ -276,3 +278,44 @@ def test_semantic_recommendation_hash_ignores_generated_identity(
     assert first.recommendation_id != second.recommendation_id
     assert first.created_at != second.created_at
     assert first.content_hash == second.content_hash
+
+
+@pytest.mark.parametrize(
+    ("status", "expected"),
+    [
+        (
+            RequirementStatus.SATISFIED,
+            Recommendation.RECOMMEND_REPRESENT,
+        ),
+        (
+            RequirementStatus.NOT_SATISFIED,
+            Recommendation.RECOMMEND_DO_NOT_REPRESENT,
+        ),
+        (
+            RequirementStatus.NOT_ESTABLISHED,
+            Recommendation.RECOMMEND_DO_NOT_REPRESENT,
+        ),
+    ],
+)
+def test_visa_10_5_v4_uses_default_liability_unless_exception_is_proven(
+    status: RequirementStatus,
+    expected: Recommendation,
+) -> None:
+    manifest = load_recommendation_mapping(
+        mapping_key="policy-aware-representment-eligibility-v2",
+        mapping_version="2.0.0",
+        mapping_root=MAPPING_ROOT,
+    )
+    source = evaluation(
+        (status,),
+        policy_id="visa-10.5-take-home-v4",
+        rulebook_version="take-home-v4",
+    )
+
+    result = map_recommendation(
+        evaluation=source,
+        aggregate=recompute_overall_status(source),
+        manifest=manifest,
+    )
+
+    assert result.recommendation is expected

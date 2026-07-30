@@ -1,0 +1,67 @@
+{
+  "presentation_rules_key": "analyst-review-package-v1",
+  "presentation_rules_version": "1.1.0",
+  "presentation_schema_version": "1.0.0",
+  "recommendation_display_labels": {
+    "RECOMMEND_REPRESENT": "Recommend representment",
+    "RECOMMEND_DO_NOT_REPRESENT": "Recommend not representing",
+    "INSUFFICIENT_EVIDENCE_TO_REPRESENT": "Insufficient evidence to recommend representment"
+  },
+  "evidence_gap_display_labels": {
+    "image_observed_visible_damage": "visible condition evidence",
+    "image_observed_serial_number": "serial number or product-identity evidence",
+    "merchant_recorded_return_request_date": "recorded return-request date",
+    "merchant_recorded_post_complaint_usage_date": "recorded post-complaint usage date",
+    "merchant_recorded_merchandise_retention_status": "recorded merchandise-retention status",
+    "carrier_reported_delivery_address": "carrier-reported delivery destination",
+    "carrier_reported_delivery_status": "carrier-reported delivery status",
+    "carrier_reported_signature_name": "carrier signature confirmation",
+    "merchant_recorded_authentication_program": "recorded authentication programme",
+    "merchant_recorded_authentication_status": "recorded authentication outcome",
+    "merchant_recorded_avs_result": "gateway AVS result",
+    "merchant_recorded_cvv_result": "gateway CVV result",
+    "merchant_recorded_first_transaction": "first-transaction indicator",
+    "merchant_recorded_prior_billing_postcode": "prior transaction billing postcode",
+    "merchant_recorded_prior_transaction_date": "prior transaction date",
+    "merchant_recorded_prior_undisputed_transaction_count": "prior undisputed transaction count"
+  },
+  "rationale_templates": [
+    {
+      "recommendation": "RECOMMEND_REPRESENT",
+      "template_key": "policy_aggregation_satisfied_v2",
+      "template_version": "1.1.0",
+      "sentences": [
+        "The policy aggregation is met under {policy_display_name}: {aggregation_summary}.",
+        "The supporting facts and source references are listed against each requirement below.",
+        "The system therefore recommends representment, subject to analyst review."
+      ]
+    },
+    {
+      "recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+      "template_key": "policy_aggregation_not_satisfied_v2",
+      "template_version": "1.1.0",
+      "sentences": [
+        "The policy aggregation cannot be met under {policy_display_name}: {aggregation_summary}.",
+        "The requirement checklist below shows the facts and sources supporting that result.",
+        "The system therefore recommends not representing, subject to analyst review."
+      ]
+    },
+    {
+      "recommendation": "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+      "template_key": "policy_aggregation_not_established_v2",
+      "template_version": "1.1.0",
+      "sentences": [
+        "The policy aggregation is not yet established under {policy_display_name}: {aggregation_summary}.",
+        "However, {causal_requirement_list} {causal_requirement_verb} not established because the listed facts are unresolved.",
+        "The system therefore finds insufficient evidence to recommend representment, subject to analyst review."
+      ]
+    }
+  ],
+  "limitations": [
+    "The recommendation is advisory and has not been reviewed by an analyst.",
+    "Visual-model observations are not independently verified visual truths.",
+    "NOT_ESTABLISHED means the current evidence did not establish the requirement; it does not prove the opposite.",
+    "The package does not submit, accept liability or contact any external party."
+  ],
+  "integrity_hash": "fd193fe78692723ef4b09b605ac809ee7991ceb6e77a9234fc9294881451c011"
+}

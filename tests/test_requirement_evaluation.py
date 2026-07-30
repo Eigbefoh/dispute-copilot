@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timedelta, timezone
 from decimal import Decimal
 from pathlib import Path
 from uuid import uuid4
@@ -10,6 +10,7 @@ from uuid import uuid4
 import pytest
 from pydantic import ValidationError
 
+from dispute_copilot.evaluation.errors import PredicateExecutionError
 from dispute_copilot.evaluation.interpreter import PredicateInterpreter
 from dispute_copilot.evaluation.models import TruthValue
 from dispute_copilot.evaluation.predicate_catalogue import (
@@ -213,6 +214,114 @@ def test_date_and_numeric_boundaries_are_inclusive() -> None:
     ).result is TruthValue.TRUE
 
 
+def test_normalized_string_comparison_preserves_no_show_meaning() -> None:
+    predicate = PredicateNode(
+        operator="normalized_string_in",
+        fact_name="attendance",
+        expected_values=("NO-SHOW",),
+    )
+
+    assert PredicateInterpreter().evaluate(
+        predicate,
+        {"attendance": found("attendance", "  no-show  ")},
+    ).result is TruthValue.TRUE
+    assert PredicateInterpreter().evaluate(
+        predicate,
+        {"attendance": found("attendance", "SHOW")},
+    ).result is TruthValue.FALSE
+
+
+@pytest.mark.parametrize(
+    ("offset", "expected"),
+    [
+        (timedelta(hours=24, seconds=1), TruthValue.FALSE),
+        (timedelta(hours=24), TruthValue.FALSE),
+        (timedelta(hours=23, minutes=59, seconds=59), TruthValue.TRUE),
+    ],
+)
+def test_late_cancellation_deadline_is_deterministic(
+    offset: timedelta,
+    expected: TruthValue,
+) -> None:
+    service = datetime(2025, 4, 20, 15, 0, tzinfo=timezone.utc)
+    predicate = PredicateNode(
+        operator="hours_before_less_than",
+        fact_name="cancelled_at",
+        other_fact_name="service_at",
+        numeric_bound_fact_name="window_hours",
+    )
+
+    outcome = PredicateInterpreter().evaluate(
+        predicate,
+        {
+            "cancelled_at": found("cancelled_at", service - offset),
+            "service_at": found("service_at", service),
+            "window_hours": found("window_hours", 24),
+        },
+    )
+
+    assert outcome.result is expected
+
+
+def test_late_cancellation_missing_operand_is_unknown() -> None:
+    predicate = PredicateNode(
+        operator="hours_before_less_than",
+        fact_name="cancelled_at",
+        other_fact_name="service_at",
+        numeric_bound_fact_name="window_hours",
+    )
+
+    outcome = PredicateInterpreter().evaluate(
+        predicate,
+        {
+            "cancelled_at": unresolved("cancelled_at"),
+            "service_at": found(
+                "service_at",
+                datetime(2025, 4, 20, 15, 0, tzinfo=timezone.utc),
+            ),
+            "window_hours": found("window_hours", 24),
+        },
+    )
+
+    assert outcome.result is TruthValue.UNKNOWN
+    assert outcome.unresolved_facts == ("cancelled_at",)
+
+
+@pytest.mark.parametrize(
+    ("cancelled_at", "service_at"),
+    [
+        (
+            datetime(2025, 4, 19, 15, 0),
+            datetime(2025, 4, 20, 15, 0),
+        ),
+        (
+            datetime(2025, 4, 21, 15, 0, tzinfo=timezone.utc),
+            datetime(2025, 4, 20, 15, 0, tzinfo=timezone.utc),
+        ),
+    ],
+)
+def test_late_cancellation_rejects_unsafe_datetimes(
+    cancelled_at: datetime,
+    service_at: datetime,
+) -> None:
+    predicate = PredicateNode(
+        operator="hours_before_less_than",
+        fact_name="cancelled_at",
+        other_fact_name="service_at",
+        numeric_bound_fact_name="window_hours",
+    )
+
+    with pytest.raises(PredicateExecutionError):
+        PredicateInterpreter().evaluate(
+            predicate,
+            {
+                "cancelled_at": found("cancelled_at", cancelled_at),
+                "service_at": found("service_at", service_at),
+                "window_hours": found("window_hours", 24),
+            },
+        )
+
+
 def test_all_eight_policies_have_exact_executable_coverage() -> None:
     manifest, manifest_hash = load_predicate_manifest(
         rulebook_version="take-home-v2",
@@ -237,6 +346,29 @@ def test_all_eight_policies_have_exact_executable_coverage() -> None:
     assert len(validated) == 8
     assert len(manifest_hash) == 64
     assert all(item.requirements for item in validated)
+
+
+def test_take_home_v4_has_exact_executable_coverage() -> None:
+    rulebook = RULEBOOK_ROOT / "take-home-v4"
+    manifest, manifest_hash = load_predicate_manifest(
+        rulebook_version="take-home-v4",
+        rulebook_root=RULEBOOK_ROOT,
+    )
+    catalogue = FactCatalogue.model_validate_json(
+        (rulebook / "facts" / "catalogue.json").read_text()
+    )
+
+    validated = [
+        select_and_validate_policy_predicates(
+            manifest=manifest,
+            policy=PolicyRecord.model_validate_json(path.read_text()),
+            catalogue=catalogue,
+        )
+        for path in sorted((rulebook / "policies").glob("*.json"))
+    ]
+
+    assert len(validated) == 8
+    assert len(manifest_hash) == 64
 
 
 def test_unknown_operator_and_cross_operator_fields_are_rejected() -> None:

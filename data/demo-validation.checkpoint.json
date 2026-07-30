@@ -1,0 +1,32 @@
+{
+  "checkpoint_id": "live-demo-v3-2026-07-30",
+  "captured_at": "2026-07-30T16:41:08Z",
+  "database_path": "data/demo-validation.db",
+  "database_sha256": "953842e9b43731e1635fd81d36f2aee6f4f6ca6cd756efa65c79101e870e74fc",
+  "sqlite_integrity_check": "ok",
+  "rulebook_version": "take-home-v3",
+  "latest_case_statuses": {
+    "COMPLETED": 6,
+    "FAILED": 4
+  },
+  "persisted_totals": {
+    "case_runs": 14,
+    "policy_selections": 14,
+    "fact_resolution_results": 8,
+    "requirement_evaluations": 8,
+    "recommendation_results": 8,
+    "analyst_review_packages": 8,
+    "analyst_decisions": 1,
+    "demo_batches": 5,
+    "demo_case_attempts": 14,
+    "demo_case_attempt_events": 42
+  },
+  "verification": {
+    "tests_passed": 304,
+    "tests_skipped": 1
+  },
+  "notes": [
+    "This checkpoint preserves live v3 demonstration results.",
+    "Historical take-home-v3 policy assets and prior baseline results were not modified by this checkpoint."
+  ]
+}

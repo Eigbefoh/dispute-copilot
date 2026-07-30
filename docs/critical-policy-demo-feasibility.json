@@ -1,0 +1,132 @@
+{
+  "assessment_id": "critical-policy-demo-feasibility-v1",
+  "assessed_against": {
+    "working_rulebook": "take-home-v3",
+    "source_contracts": "data/policy-contracts/take-home-v4/source-derived-contracts.json",
+    "predicate_schema": "requirement-predicates/2.0.0",
+    "fact_model": "flat-source-qualified-facts-v1"
+  },
+  "decision": "ESCALATION_REQUIRED_BEFORE_TAKE_HOME_V4_DEMO",
+  "safe_checkpoint": {
+    "take_home_v3_unchanged": true,
+    "take_home_v4_demo_created": false,
+    "historical_results_rewritten": false
+  },
+  "requirements": [
+    {
+      "policy": "Visa 13.3",
+      "requirement_id": "V13.3-R2",
+      "status": "BLOCKED",
+      "required_facts_and_types": [
+        "Source-associated published product attributes",
+        "Source-associated delivered product attributes",
+        "Optional applicable serial identities"
+      ],
+      "required_logic": "ANY_OF(MATERIAL_DESCRIPTION_MATCH, DELIVERED_SPECIFICATION_MATCH, APPLICABLE_SERIAL_NUMBER_MATCH)",
+      "record_pairing_required": true,
+      "operator_effect": "Requires a versioned product-attribute comparison domain predicate and structured comparison trace.",
+      "extraction_effect": "Requires structured, source-associated attribute records rather than unrelated flat colour/type arrays.",
+      "persistence_effect": "Requires an additive structured-fact payload version; historical v3 payloads remain untouched.",
+      "truth_contract": {
+        "TRUE": "At least one complete approved comparison route materially matches.",
+        "FALSE": "Complete comparable applicable attributes materially mismatch.",
+        "UNKNOWN": "No route has both comparable operands, or routes conflict."
+      },
+      "escalation_reason": "No approved product-attribute materiality rules exist, and the current flat fact model cannot retain safe operand association."
+    },
+    {
+      "policy": "Visa 13.3",
+      "requirement_id": "V13.3-R3",
+      "status": "NARROWLY_FEASIBLE_AFTER_FACT_APPROVAL",
+      "required_facts_and_types": [
+        "merchant_stated_return_method: STRING",
+        "merchant_stated_return_window_days: INTEGER",
+        "merchant_reported_return_search_scope: STRING",
+        "merchant_reported_return_request_count: INTEGER",
+        "merchant_recorded_post_complaint_usage_date: DATE",
+        "merchant_recorded_merchandise_retention_status: STRING"
+      ],
+      "required_logic": "ANY_OF(ALL_OF(RETURN_ROUTE, SCOPED_SEARCH, REQUEST_COUNT_EQUALS_ZERO), ALL_OF(POST_COMPLAINT_USAGE, RETENTION))",
+      "record_pairing_required": false,
+      "operator_effect": "Representable with existing ALL_OF, ANY_OF, FACT_IS_FOUND and FACT_EQUALS operators.",
+      "extraction_effect": "Adds two source-qualified evidence facts. Missing search evidence remains NOT_FOUND and therefore UNKNOWN.",
+      "persistence_effect": "Compatible with the existing flat fact payload.",
+      "truth_contract": {
+        "TRUE": "Either independent source branch is complete.",
+        "FALSE": "Complete records positively disprove both branches.",
+        "UNKNOWN": "Neither branch is complete; absence of a request record is never inverted."
+      },
+      "approval_needed": "Approve the exact scoped-search fact definitions."
+    },
+    {
+      "policy": "Mastercard 4859",
+      "requirement_id": "MC4859-R3",
+      "status": "BLOCKED",
+      "required_facts_and_types": [
+        "Associated booking/service datetime",
+        "Associated cancellation datetime",
+        "Associated cancellation-window duration",
+        "Attendance status for the same reservation"
+      ],
+      "required_logic": "ANY_OF(NO_SHOW, CANCELLATION_DATETIME_AFTER(SERVICE_DATETIME - POLICY_WINDOW))",
+      "record_pairing_required": true,
+      "operator_effect": "Requires an explicit cancellation-after-policy-cutoff domain predicate with a deterministic trace.",
+      "extraction_effect": "Requires booking, cancellation and policy-window association; independent parallel arrays are prohibited.",
+      "persistence_effect": "Requires an additive structured booking-event payload or an equally explicit associated record.",
+      "truth_contract": {
+        "TRUE": "No-show is established or the complete cutoff comparison proves late cancellation.",
+        "FALSE": "Attendance or timely cancellation is established.",
+        "UNKNOWN": "Neither branch has complete associated operands, or sources conflict."
+      },
+      "escalation_reason": "The current date-only flat facts and predicate language cannot safely calculate or associate the cutoff."
+    },
+    {
+      "policy": "Visa 10.5",
+      "requirement_id": "V10.5-R1",
+      "status": "BLOCKED",
+      "required_facts_and_types": [
+        "Authoritative issuer classification",
+        "Authoritative processor or merchant processing classification"
+      ],
+      "required_logic": "EXCEPTION_PROVEN; otherwise use the approved liability outcome",
+      "record_pairing_required": true,
+      "operator_effect": "Requires a policy-specific recommendation mapping condition rather than aggregate-only mapping.",
+      "extraction_effect": "Requires source-qualified authoritative classification on both sides.",
+      "persistence_effect": "Requires an additive recommendation-mapping schema version; historical mappings remain untouched.",
+      "truth_contract": {
+        "TRUE": "Authoritative classifications deterministically prove issuer miscoding.",
+        "FALSE": "Complete classifications agree that the code applies.",
+        "UNKNOWN": "One side is absent or classifications conflict."
+      },
+      "escalation_reason": "The exact advisory vocabulary remains unapproved: RECOMMEND_DO_NOT_REPRESENT versus ACCEPT_LIABILITY."
+    },
+    {
+      "policy": "Mastercard 4855",
+      "requirement_id": "MC4855-R3",
+      "status": "FEASIBLE",
+      "required_facts_and_types": [
+        "carrier_reported_delivery_address: ADDRESS",
+        "case_recorded_billing_postcode: STRING",
+        "case_recorded_shipping_postcode: STRING"
+      ],
+      "required_logic": "ANY_OF(MATERIAL_ADDRESS_MATCH(delivery, billing), MATERIAL_ADDRESS_MATCH(delivery, shipping))",
+      "record_pairing_required": false,
+      "operator_effect": "Uses the existing versioned material-address operator with mismatch_result UNKNOWN for attribution uncertainty.",
+      "extraction_effect": "No new provider contract is required.",
+      "persistence_effect": "No payload change is required.",
+      "truth_contract": {
+        "TRUE": "At least one comparable authorized address materially matches.",
+        "FALSE": "Complete comparable records mismatch every authorized address.",
+        "UNKNOWN": "Inputs are missing, non-comparable or attribution conflicts."
+      },
+      "implementation_note": "Do not ship this correction alone under a partially corrected v4-demo catalogue."
+    }
+  ],
+  "required_approvals": [
+    "Approve the minimum structured product-attribute and booking-event fact expansion.",
+    "Approve deterministic product materiality rules.",
+    "Choose the Visa 10.5 advisory outcome vocabulary.",
+    "Approve a policy-specific recommendation-mapping schema extension."
+  ],
+  "operational_consequence": "The application and UI may demonstrate the preserved take-home-v3 pipeline with an explicit known-policy-limitations label, but the system must not claim corrected all-case policy fidelity or create take-home-v4-demo until these gates are resolved."
+}

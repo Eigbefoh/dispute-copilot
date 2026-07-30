@@ -1,0 +1,967 @@
+{
+  "plan_metadata": {
+    "plan_id": "provider-pluggable-model-entry-point-v1",
+    "title": "Provider-Pluggable Model Entry Point",
+    "version": "1.1.0",
+    "created_at": "2026-07-30",
+    "status": "IMPLEMENTATION_COMPLETE_OFFLINE_LIVE_QUALIFICATION_PENDING",
+    "implementation_authorized": true,
+    "baseline_branch": "agent/live-extraction-validation-baseline",
+    "baseline_commit": "223e9eb",
+    "baseline_test_result": {
+      "passed": 321,
+      "failed": 0,
+      "skipped": 1,
+      "skipped_scope": "Explicitly gated live-provider integration test"
+    },
+    "implementation_result": {
+      "ordinary_test_result": {
+        "passed": 345,
+        "failed": 0,
+        "skipped": 1,
+        "skipped_scope": "Explicitly gated live-provider integration test"
+      },
+      "provider_status": {
+        "nebius": "IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED",
+        "openai": "IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED",
+        "anthropic": "IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED"
+      },
+      "live_qualification_performed": false,
+      "live_qualification_reason": "Implementation approval did not authorize billable P4/P5 live qualification; OpenAI live validation was explicitly declined until offline behaviour is satisfactory."
+    }
+  },
+  "intent": {
+    "primary": "Add three explicitly selected model transports while preserving the existing provider-neutral extraction contract and every downstream behaviour.",
+    "supported_providers": [
+      "nebius",
+      "openai",
+      "anthropic"
+    ],
+    "architectural_scope": "Transport construction, provider request encoding, provider response decoding, provider identity, configuration validation, tests, and operator documentation.",
+    "not_a_redesign_of": [
+      "Evidence intake",
+      "Evidence bundle integrity",
+      "Document conversion contracts",
+      "Policy fact selection",
+      "Canonical extraction candidate models",
+      "Fact admission",
+      "Citation validation",
+      "Requirement predicates",
+      "Requirement aggregation",
+      "Recommendation mapping",
+      "Analyst-review assembly",
+      "Persistence",
+      "Gradio callbacks",
+      "Cached reopening"
+    ]
+  },
+  "baseline_architecture": {
+    "provider_neutral_interface": "dispute_copilot.extraction.evidence_extractor.EvidenceCandidateExtractor",
+    "runtime_container": "dispute_copilot.extraction.provider_runtime.ExtractionRuntime",
+    "canonical_untrusted_schema": "dispute_copilot.extraction.evidence_extraction_models.ExtractionResponse",
+    "dynamic_request_schema_factory": "dispute_copilot.extraction.evidence_extraction_models.extraction_response_model_for",
+    "execution_identity": "dispute_copilot.extraction.provider_models.ModelExecutionIdentity",
+    "shared_request_builder": "dispute_copilot.extraction.openai_adapter_common.build_extraction_request",
+    "strict_downstream_boundary": "dispute_copilot.extraction.fact_resolution_service.resolve_selection_facts",
+    "registered_provider_routes_before_change": {
+      "nebius": {
+        "fact_extraction_adapter": "OpenAIChatCompletionsEvidenceExtractor",
+        "vision_adapter": "OpenAIResponsesVisionProvider",
+        "fact_transport": "OpenAI-compatible Chat Completions",
+        "vision_transport": "OpenAI-compatible Responses API"
+      },
+      "openai_compatible": {
+        "fact_extraction_adapter": "OpenAIResponsesEvidenceExtractor",
+        "vision_adapter": "OpenAIResponsesVisionProvider",
+        "status": "To be removed from the supported provider registry because the target supports only nebius, openai, and anthropic"
+      }
+    }
+  },
+  "non_negotiable_invariants": [
+    "The EvidenceCandidateExtractor protocol remains the only extraction interface consumed by orchestration.",
+    "ExtractionResponse and extraction_response_model_for remain the canonical provider-facing and locally validated structured-output contracts.",
+    "All providers receive only policy-requested evidence facts; CASE_METADATA facts remain on the deterministic metadata route.",
+    "TEXT and VISUAL evidence references remain a discriminated union and cannot mix supporting_text with visual_observation.",
+    "Text citations must continue to match supplied canonical page text under the existing deterministic normalization rules.",
+    "Every response must cover exactly the requested facts in the requested order.",
+    "No provider response is partially admitted, repaired, coerced, or supplemented.",
+    "NOT_FOUND remains insufficient evidence and never becomes evidence of the opposite.",
+    "Requirement evaluation and recommendation generation remain deterministic and provider-independent.",
+    "Provider selection is exact and configuration-driven; no automatic routing, substitution, fallback, or cross-provider retry is permitted.",
+    "Provider/model incompatibility fails closed rather than weakening the schema or prompt.",
+    "API keys remain SecretStr values and must never appear in logs, exceptions, execution identity, SQLite, temporary filenames, or committed artifacts.",
+    "Existing Nebius fact-extraction request shape, fact adapter, endpoint default, prompt version, schema version, parameters, errors, and admitted results remain unchanged.",
+    "The image-description boundary is strengthened uniformly for Nebius, OpenAI, and Anthropic: written text, visible pixels, and limitations are separate structured fields before deterministic rendering into existing EvidencePage text.",
+    "Live model wording and extracted values may differ; the cross-provider invariant is identical evidence scope, instructions, canonical candidate shape, and deterministic admission and decision treatment.",
+    "Existing policies, rulebooks, database schemas, persisted results, UI behaviour, CLI behaviour, and cached reopening remain unchanged.",
+    "No live provider call is made during the ordinary test suite."
+  ],
+  "target_architecture": {
+    "flow": [
+      "MODEL_PROVIDER selects one exact registered runtime factory",
+      "The selected factory creates one native provider client",
+      "The provider adapter encodes the existing request and canonical schema",
+      "The provider returns one complete structured response",
+      "The adapter parses into ExtractionResponse",
+      "Existing coverage and structural checks run",
+      "Existing deterministic fact admission validates values, citations, source scope, and provenance",
+      "Existing deterministic evaluation, recommendation, review assembly, and persistence continue unchanged"
+    ],
+    "registry": {
+      "nebius": "create_nebius_runtime",
+      "openai": "create_openai_runtime",
+      "anthropic": "create_anthropic_runtime"
+    },
+    "unsupported_names": [
+      "openai_compatible",
+      "azure_openai",
+      "bedrock",
+      "vertex",
+      "auto",
+      "default"
+    ],
+    "unsupported_provider_behaviour": "Raise UnsupportedProviderError before constructing a transport or reading evidence."
+  },
+  "provider_matrix": {
+    "nebius": {
+      "implementation": "Keep the current fact-extraction runtime composition unchanged and apply only the approved shared structured visual-observation contract to image conversion.",
+      "fact_adapter": "OpenAIChatCompletionsEvidenceExtractor",
+      "vision_adapter": "OpenAIResponsesVisionProvider",
+      "default_base_url": "https://api.tokenfactory.nebius.com/v1/",
+      "structured_output": "Chat Completions JSON Schema with strict=true",
+      "vision_output": "Shared VisionObservationResult via the Responses vision route, followed by deterministic rendering",
+      "adapter_identity": "openai_chat_completions",
+      "preservation_rule": "Do not refactor the fact-extraction route merely to make providers look symmetrical. Any Nebius vision change is limited to the shared visual-observation schema, prompt, validation, and deterministic rendering required by this approved amendment."
+    },
+    "openai": {
+      "implementation": "Register the existing native OpenAI Responses adapter under the explicit provider name openai.",
+      "fact_adapter": "OpenAIResponsesEvidenceExtractor",
+      "vision_adapter": "OpenAIResponsesVisionProvider",
+      "default_base_url": "https://api.openai.com/v1/",
+      "structured_output": "Responses API Pydantic JSON Schema parsing",
+      "vision_output": "Shared VisionObservationResult via native Responses structured output, followed by deterministic rendering",
+      "adapter_identity": "openai_responses",
+      "client": "Official openai Python SDK already declared by the project",
+      "compatibility_rule": "The configured model must support the existing Responses, multimodal, and structured-output contract or the attempt fails closed."
+    },
+    "anthropic": {
+      "implementation": "Add a native Anthropic Messages adapter and native Anthropic vision provider.",
+      "fact_adapter": "AnthropicMessagesEvidenceExtractor",
+      "vision_adapter": "AnthropicMessagesVisionProvider",
+      "default_base_url": "https://api.anthropic.com/",
+      "structured_output": "Messages API output_config.format with type=json_schema and the exact dynamic Pydantic JSON Schema",
+      "vision_output": "Shared VisionObservationResult via native Messages structured output, followed by deterministic rendering",
+      "adapter_identity": "anthropic_messages",
+      "client": "Official anthropic Python SDK",
+      "image_transport": "Messages content blocks with base64 image sources and the exact admitted PNG or JPEG media type",
+      "compatibility_rule": "The configured model must support images when images are present and must support the exact structured-output schema. Unsupported models fail closed."
+    }
+  },
+  "configuration_contract": {
+    "only_documented_environment_variables": [
+      "MODEL_PROVIDER",
+      "MODEL_NAME",
+      "MODEL_API_KEY",
+      "MODEL_BASE_URL"
+    ],
+    "required": [
+      "MODEL_PROVIDER",
+      "MODEL_NAME",
+      "MODEL_API_KEY"
+    ],
+    "optional": [
+      "MODEL_BASE_URL"
+    ],
+    "provider_values": [
+      "nebius",
+      "openai",
+      "anthropic"
+    ],
+    "base_url_rules": {
+      "common": [
+        "If supplied, use the exact credential-free HTTP(S) URL.",
+        "Reject embedded usernames, passwords, query strings, and fragments.",
+        "Do not infer provider identity from the URL."
+      ],
+      "nebius": "If omitted, retain the existing Nebius default endpoint.",
+      "openai": "If omitted, materialize the official OpenAI API endpoint before client construction.",
+      "anthropic": "If omitted, materialize the official Anthropic API endpoint before client construction."
+    },
+    "legacy_nebius_bridge": {
+      "decision": "Retain the already deprecated NEBIUS_* bridge unchanged for backward compatibility, but do not document or extend it.",
+      "reason": "Removing it would change existing Nebius configuration behaviour, which is outside this transport extension.",
+      "constraint": "No OpenAI- or Anthropic-specific environment variables are added."
+    },
+    "secret_rules": [
+      "MODEL_API_KEY is passed to the selected client constructor only.",
+      "MODEL_API_KEY is never included in ModelExecutionIdentity.",
+      "MODEL_API_KEY is redacted from provider error text and explicit debug diagnostics.",
+      "MODEL_API_KEY is never stored in SQLite or temporary diagnostic filenames."
+    ]
+  },
+  "canonical_contract_design": {
+    "request": {
+      "requested_fact_source": "The immutable selected policy snapshot.",
+      "fact_order": "Preserve selected policy order.",
+      "case_scope": "Include the immutable transaction ID used by the current request builder.",
+      "document_scope": "Include only EvidenceDocuments derived from the CaseRun evidence snapshot.",
+      "canonical_text": "Supply page_number, extraction_method, and canonical_text exactly as today.",
+      "image_scope": "Attach only image files already present in the verified EvidenceBundle."
+    },
+    "response": {
+      "outer_model": "ExtractionResponse",
+      "candidate_model": "ExtractionCandidate",
+      "value_model": "ExtractionCandidateValue",
+      "reference_model": "TEXT or VISUAL discriminated reference",
+      "coverage": "Exactly one candidate for every requested fact; no missing, duplicate, reordered, or extra facts.",
+      "runtime_types": "Continue strict STRING, ADDRESS, DATE, DATETIME, DECIMAL, INTEGER, and BOOLEAN encoding rules.",
+      "admission": "Provider output remains untrusted until the existing deterministic factory validates catalogue type, cardinality, provenance, page, exact quote, and source channel."
+    },
+    "visual_observation_contract": {
+      "model": "VisionObservationResult",
+      "purpose": "Describe image-derived source material without collapsing written claims, visible pixels, and epistemic limitations into one free-form description.",
+      "fields": {
+        "written_text_observations": {
+          "type": "tuple[str, ...]",
+          "meaning": "Text visibly written in the image, copied faithfully and treated as a written assertion rather than as pixel-established truth.",
+          "may_be_empty": true
+        },
+        "visible_pixel_observations": {
+          "type": "tuple[str, ...]",
+          "meaning": "Conservative descriptions of objects, colours, orientation, and other directly visible pixels.",
+          "may_be_empty": true
+        },
+        "limitations": {
+          "type": "tuple[str, ...]",
+          "meaning": "What the supplied view cannot establish, including hidden condition, operation, completeness, comparison, causality, or off-camera content.",
+          "minimum_items": 1
+        }
+      },
+      "pydantic_rules": [
+        "ConfigDict(frozen=True, extra='forbid').",
+        "Every field is required even when an observation tuple is empty.",
+        "Every item must be a non-blank bounded string.",
+        "Duplicate items within a field are rejected.",
+        "The provider response is rejected as a whole on any schema failure; no section is repaired or partially admitted."
+      ],
+      "provider_neutral_rendering": [
+        "Validate the native provider response as VisionObservationResult.",
+        "Render the three fields deterministically, in fixed section order, into the existing EvidencePage.text boundary.",
+        "Do not change EvidenceDocument persistence or historical converted documents.",
+        "Bump the image converter/prompt/schema version so new structured conversions cannot be confused with earlier cached image descriptions.",
+        "Preserve exact written observations in canonical page text so later TEXT citations must copy from supplied canonical text.",
+        "Keep visible pixel observations eligible only for VISUAL provenance."
+      ],
+      "cb_2025_0006_required_distinctions": {
+        "written_claim_example": "The visible caption says that a Carlton armchair was delivered on 18 April 2025.",
+        "pixel_observation_example": "A front-facing, sage-coloured armchair is visible.",
+        "required_limitation": "Only a front view is visible; the image cannot establish hidden structural condition, wobbling, absence of hidden damage, defect-free condition, or complete conformity with the order.",
+        "forbidden_inferences": [
+          "The chair is defect-free.",
+          "The chair does not wobble.",
+          "The chair has no hidden damage.",
+          "Every product feature matches the listing.",
+          "The customer completed or refused a return process."
+        ]
+      }
+    },
+    "no_provider_specific_domain_models": true
+  },
+  "anthropic_adapter_design": {
+    "new_file": "src/dispute_copilot/extraction/anthropic_messages_adapter.py",
+    "constants": {
+      "ADAPTER_NAME": "anthropic_messages",
+      "PROMPT_VERSION": "lean-evidence-extraction/0.5.0",
+      "RESPONSE_SCHEMA_VERSION": "extraction-response/0.4.0",
+      "VISION_PROMPT_VERSION": "source-image-observations/1.0.0",
+      "VISION_SCHEMA_VERSION": "vision-observation-result/1.0.0",
+      "MAX_TOKENS": 4096,
+      "TEMPERATURE": 0
+    },
+    "client_creation": [
+      "Import Anthropic lazily so missing transport dependencies produce ProviderTransportUnavailableError.",
+      "Construct Anthropic with only the configured api_key and effective base_url.",
+      "Wrap construction failures without exposing client arguments or credentials.",
+      "Accept an injected client_factory for deterministic unit tests."
+    ],
+    "fact_request": [
+      "Return an empty tuple without a provider call when requested_facts is empty.",
+      "Reject CASE_METADATA facts before transport invocation.",
+      "Run validate_bundle_documents before transport invocation.",
+      "Build the user request with the existing build_extraction_request helper.",
+      "Encode each admitted PNG or JPEG as an Anthropic base64 image content block.",
+      "Include the same document_id, file_name, and page_number labels used by the current adapters.",
+      "Call client.messages.create once with the exact configured model, existing system instructions, MAX_TOKENS, TEMPERATURE, and output_config.format.",
+      "Pass extraction_response_model_for(requested_facts).model_json_schema() unchanged as the JSON Schema.",
+      "Do not invoke an SDK helper that removes or rewrites unsupported schema constraints.",
+      "Do not enable tools, web search, citations, extended thinking, prompt caching, or streaming."
+    ],
+    "fact_response": [
+      "Treat stop_reason=refusal as ProviderRejectionError.",
+      "Treat max-token truncation, missing content, multiple structured payloads, or blank text as InvalidProviderResponseError.",
+      "Require exactly one non-blank structured JSON text payload.",
+      "Parse the payload through ExtractionResponse.model_validate_json.",
+      "Run format_pydantic_validation_summary for secret-safe field-level diagnostics.",
+      "Run format_candidate_coverage_summary and reject any coverage mismatch.",
+      "Use capture_temporary_raw_response only when explicit local debug mode is enabled.",
+      "Return only tuple[ExtractionCandidate, ...]."
+    ],
+    "vision_request": [
+      "Use client.messages.create with one base64 image block and the shared source-preserving structured vision instruction.",
+      "Accept only PNG and JPEG because intake already rejects other live evidence formats.",
+      "Require the exact VisionObservationResult JSON Schema with written_text_observations, visible_pixel_observations, and limitations.",
+      "Do not ask for policy facts, comparisons, conclusions, recommendations, or hidden-condition inferences."
+    ],
+    "vision_response": [
+      "Collect exactly one structured JSON payload.",
+      "Reject refusals, blank output, tool blocks, multiple payloads, schema violations, or non-text-only output.",
+      "Validate the payload as VisionObservationResult without repair or partial admission.",
+      "Render the validated fields deterministically into existing EvidencePage.text.",
+      "Expose provider_version as canonical ModelExecutionIdentity JSON."
+    ],
+    "schema_incompatibility": "If Anthropic rejects the exact schema as unsupported or too complex, translate the provider error to StructuredOutputUnsupportedError. Do not simplify the schema, remove constraints, switch to tool use, or request unstructured JSON as a fallback."
+  },
+  "openai_adapter_design": {
+    "new_adapter_required": false,
+    "reason": "OpenAIResponsesEvidenceExtractor and OpenAIResponsesVisionProvider are already explicit native OpenAI Responses API adapters.",
+    "runtime_change": [
+      "Add create_openai_runtime to provider_runtime.py.",
+      "Materialize DEFAULT_OPENAI_BASE_URL when MODEL_BASE_URL is absent.",
+      "Compose the existing Responses extractor and vision provider.",
+      "Set settings.provider to openai so execution identity records the configured provider exactly."
+    ],
+    "preservation": [
+      "Do not change the existing fact-extraction prompt, schema, response parser, image encoding, diagnostics, or fact coverage logic.",
+      "Apply the approved shared VisionObservationResult prompt, schema, validation, and deterministic rendering to OpenAI image conversion.",
+      "Do not fall back to Chat Completions if Responses structured output is unsupported.",
+      "Do not select another OpenAI model."
+    ]
+  },
+  "nebius_preservation_design": {
+    "freeze_before_change": [
+      "Run the existing Nebius adapter and provider-runtime tests.",
+      "Record the current request body shape for Chat Completions extraction.",
+      "Record the current Responses request shape for image description.",
+      "Record the current execution identity JSON.",
+      "Record the current error classes and secret-safe messages."
+    ],
+    "implementation_rule": "Leave create_nebius_runtime, OpenAIChatCompletionsEvidenceExtractor, and its effective fact-extraction settings behaviour unchanged. Apply only the approved shared VisionObservationResult boundary to OpenAIResponsesVisionProvider and version the new image conversion distinctly.",
+    "post_change_proof": [
+      "All existing Nebius unit tests pass without rewritten expectations.",
+      "The live gated Nebius contract test passes using the same configured model and endpoint.",
+      "The CB-2025-0004 v4 live result remains reconstructable from the existing database.",
+      "Cached reopening makes zero provider calls."
+    ]
+  },
+  "file_change_design": [
+    {
+      "path": "pyproject.toml",
+      "action": "modify",
+      "changes": [
+        "Add anthropic>=0.104,<1 as the bounded official Anthropic SDK dependency.",
+        "Do not change existing openai or other dependency bounds."
+      ]
+    },
+    {
+      "path": ".env.example",
+      "action": "modify",
+      "changes": [
+        "List exactly nebius, openai, and anthropic as registered providers.",
+        "Keep the same four generic MODEL_* names.",
+        "Add no provider-specific secret variables."
+      ]
+    },
+    {
+      "path": "src/dispute_copilot/config.py",
+      "action": "modify",
+      "changes": [
+        "Add DEFAULT_OPENAI_BASE_URL and DEFAULT_ANTHROPIC_BASE_URL.",
+        "Validate generic MODEL_PROVIDER against the exact supported set.",
+        "Keep SecretStr and all current URL security validation.",
+        "Keep the deprecated Nebius bridge isolated and unchanged."
+      ]
+    },
+    {
+      "path": "src/dispute_copilot/extraction/provider_runtime.py",
+      "action": "modify",
+      "changes": [
+        "Keep create_nebius_runtime unchanged.",
+        "Add create_openai_runtime.",
+        "Add create_anthropic_runtime.",
+        "Register exactly nebius, openai, and anthropic.",
+        "Remove openai_compatible from the registry.",
+        "Continue selecting one exact factory with no fallback."
+      ]
+    },
+    {
+      "path": "src/dispute_copilot/extraction/vision_models.py",
+      "action": "add",
+      "changes": [
+        "Define the frozen provider-neutral VisionObservationResult contract.",
+        "Require written_text_observations, visible_pixel_observations, and limitations.",
+        "Forbid extra fields, blank items, duplicates, and an empty limitations tuple.",
+        "Provide one deterministic renderer into the existing EvidencePage.text representation."
+      ]
+    },
+    {
+      "path": "src/dispute_copilot/extraction/vision_prompt.py",
+      "action": "add",
+      "changes": [
+        "Define one shared provider-neutral structured vision instruction and version.",
+        "State that written image captions are claims, pixel descriptions are observations, and limitations are mandatory.",
+        "Prohibit hidden-condition, defect-free, complete-match, policy, and recommendation inferences.",
+        "Include the CB-2025-0006 written-text, pixel-observation, and limitation examples."
+      ]
+    },
+    {
+      "path": "src/dispute_copilot/extraction/anthropic_messages_adapter.py",
+      "action": "add",
+      "changes": [
+        "Implement AnthropicMessagesEvidenceExtractor.",
+        "Implement AnthropicMessagesVisionProvider.",
+        "Implement native Anthropic client construction.",
+        "Reuse canonical request, schema, validation summary, coverage, diagnostics, and secret-sanitisation helpers."
+      ]
+    },
+    {
+      "path": "src/dispute_copilot/extraction/openai_responses_adapter.py",
+      "action": "modify_narrowly",
+      "changes": [
+        "Preserve fact extraction unchanged.",
+        "Make image conversion request and validate the shared VisionObservationResult schema.",
+        "Render validated vision fields deterministically into existing EvidencePage.text.",
+        "Only adjust client-construction reuse if required for the explicit openai runtime."
+      ]
+    },
+    {
+      "path": "src/dispute_copilot/extraction/openai_chat_completions_adapter.py",
+      "action": "preserve",
+      "changes": [
+        "No intentional request, response, identity, prompt, schema, parameter, or error change."
+      ]
+    },
+    {
+      "path": "tests/test_provider_runtime.py",
+      "action": "modify",
+      "changes": [
+        "Assert exactly three registered provider names.",
+        "Assert exact runtime composition for all three.",
+        "Assert openai_compatible is rejected before client construction.",
+        "Assert base URL and model preservation.",
+        "Assert configuration remains secret-safe."
+      ]
+    },
+    {
+      "path": "tests/test_anthropic_messages_adapter.py",
+      "action": "add",
+      "changes": [
+        "Test native Messages request shape, exact schema, base64 images, response parsing, vision output, lineage, debug diagnostics, and all failure classes."
+      ]
+    },
+    {
+      "path": "tests/test_provider_adapter_contract.py",
+      "action": "add",
+      "changes": [
+        "Run the same canonical valid and invalid fixtures through Nebius, OpenAI, and Anthropic adapters.",
+        "Prove identical canonical ExtractionCandidate types and identical local validation boundaries.",
+        "Do not assert that independently generated live values or wording are identical."
+      ]
+    },
+    {
+      "path": "tests/test_provider_vision_contract.py",
+      "action": "add",
+      "changes": [
+        "Run controlled Nebius, OpenAI, and Anthropic responses through the same VisionObservationResult boundary.",
+        "Use data/evidence/CB-2025-0006_delivery_photo.png as the shared image input.",
+        "Require separate written_text_observations, visible_pixel_observations, and limitations.",
+        "Verify deterministic rendering preserves section identity and exact written observations.",
+        "Reject responses that claim defect-free condition, no wobble, no hidden damage, complete product match, or return-process completion.",
+        "Prove invalid vision output is rejected as a whole and never becomes an EvidenceDocument."
+      ]
+    },
+    {
+      "path": "tests/test_evidence_extraction.py",
+      "action": "preserve_or_extend",
+      "changes": [
+        "Retain existing native OpenAI Responses coverage.",
+        "Add only explicit provider identity/default-endpoint assertions if not covered by the new contract suite."
+      ]
+    },
+    {
+      "path": "README.md",
+      "action": "modify",
+      "changes": [
+        "Document the exact provider values and configuration examples.",
+        "Remove openai_compatible from current supported-provider documentation.",
+        "State that provider selection is explicit and has no fallback.",
+        "Define IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED, LIVE_VALIDATION_FAILED, and LIVE_VALIDATED.",
+        "State that live outputs may differ while deterministic treatment remains identical."
+      ]
+    },
+    {
+      "path": "docs/v4-reproducibility-guide.md",
+      "action": "modify",
+      "changes": [
+        "Add Nebius, OpenAI, and Anthropic configuration examples using placeholders only.",
+        "Document provider-specific structured-output compatibility failures.",
+        "Document the CB-2025-0004, CB-2025-0006, and CB-2025-0007 live qualification pack and status labels.",
+        "Keep all downstream operating instructions unchanged."
+      ]
+    }
+  ],
+  "execution_identity_contract": {
+    "required_fields": [
+      "provider",
+      "model",
+      "adapter",
+      "prompt_version",
+      "schema_version",
+      "parameters"
+    ],
+    "provider_values": [
+      "nebius",
+      "openai",
+      "anthropic"
+    ],
+    "adapter_values": {
+      "nebius": "openai_chat_completions",
+      "openai": "openai_responses",
+      "anthropic": "anthropic_messages"
+    },
+    "material_parameters": {
+      "nebius": "Preserve the existing identity exactly.",
+      "openai": [
+        "image_detail",
+        "structured_output"
+      ],
+      "anthropic": [
+        "max_tokens",
+        "temperature",
+        "structured_output",
+        "image_transport"
+      ]
+    },
+    "forbidden_identity_content": [
+      "API key",
+      "Authorization header",
+      "Raw evidence content",
+      "Raw provider response",
+      "Provider client object",
+      "Personal analyst identity"
+    ]
+  },
+  "failure_mapping": [
+    {
+      "condition": "Unsupported MODEL_PROVIDER",
+      "error": "UnsupportedProviderError",
+      "downstream_effect": "No client, evidence access, run result, or model call"
+    },
+    {
+      "condition": "Missing MODEL_PROVIDER, MODEL_NAME, or MODEL_API_KEY",
+      "error": "ProviderConfigurationError",
+      "downstream_effect": "Stop before evidence resolution"
+    },
+    {
+      "condition": "Invalid or credential-bearing MODEL_BASE_URL",
+      "error": "ProviderConfigurationError",
+      "downstream_effect": "Stop before client construction"
+    },
+    {
+      "condition": "Provider SDK missing",
+      "error": "ProviderTransportUnavailableError",
+      "downstream_effect": "No model call"
+    },
+    {
+      "condition": "Endpoint unreachable or timeout",
+      "error": "ProviderEndpointError",
+      "downstream_effect": "Persist only the existing bounded safe attempt failure"
+    },
+    {
+      "condition": "Authentication, quota, rate limit, refusal, or provider rejection",
+      "error": "ProviderRejectionError",
+      "downstream_effect": "No partial extraction result"
+    },
+    {
+      "condition": "Configured model does not support required multimodal or structured-output contract",
+      "error": "StructuredOutputUnsupportedError",
+      "downstream_effect": "No fallback, substitution, schema weakening, or downstream result"
+    },
+    {
+      "condition": "Malformed JSON, schema violation, truncation, missing payload, or unexpected provider content",
+      "error": "InvalidProviderResponseError",
+      "downstream_effect": "No partial extraction result"
+    },
+    {
+      "condition": "Missing, duplicate, reordered, or extra requested fact",
+      "error": "InvalidProviderResponseError",
+      "downstream_effect": "Reject the complete provider response"
+    },
+    {
+      "condition": "Invalid value type, cardinality, citation, document, page, or evidence channel",
+      "error": "Existing EvidenceCandidateValidationError subclass",
+      "downstream_effect": "Reject the complete FactResolutionResult and produce no evaluation or recommendation"
+    }
+  ],
+  "provider_contract_tests": {
+    "shared_valid_cases": [
+      "All requested facts return NOT_FOUND with no values.",
+      "One text fact returns a strict typed value and exact canonical-text reference.",
+      "One visual fact returns a strict typed value and VISUAL-only observation.",
+      "A value supported by text and pixels uses two separate references.",
+      "Multiple-cardinality fact preserves ordered distinct values and provenance."
+    ],
+    "shared_invalid_cases": [
+      "Unexpected status enum.",
+      "Wrong raw runtime type.",
+      "TEXT reference containing visual_observation.",
+      "VISUAL reference containing supporting_text.",
+      "Missing requested fact.",
+      "Extra unrequested fact.",
+      "Duplicate fact.",
+      "Reordered facts.",
+      "Citation text absent from canonical page text.",
+      "Unknown document ID or filename.",
+      "Wrong page number.",
+      "Metadata fact sent to provider.",
+      "Malformed or missing structured payload."
+    ],
+    "assertions": [
+      "For controlled mocked payloads, every adapter returns the same canonical tuple[ExtractionCandidate, ...] type and field structure.",
+      "The contract does not assert identical independently generated live values, wording, or confidence across different models.",
+      "Every live provider receives the same admitted evidence, policy-requested facts, source-preserving instructions, and canonical schemas.",
+      "Every valid live response is subjected to the same deterministic admission, evaluation, recommendation, and persistence boundaries.",
+      "Invalid adapters reach the same canonical Pydantic or deterministic admission boundary.",
+      "No adapter-specific candidate type crosses the protocol.",
+      "No invalid case creates FactResolutionResult, evaluation, recommendation, or review package.",
+      "Provider identity differs only in provider, adapter, and declared material transport parameters.",
+      "No secret appears in identity, exception strings, captured ordinary logs, SQLite, or debug artifact paths."
+    ],
+    "same_behaviour_definition": "Provider equivalence means equal inputs, canonical response types, and deterministic treatment of valid or invalid evidence. It does not mean different models must generate identical facts or wording."
+  },
+  "provider_specific_tests": {
+    "nebius": [
+      "Retain every existing test in tests/test_nebius_chat_adapter.py.",
+      "Retain current OpenAI SDK serialization regression for schema versus schema_.",
+      "Retain current TEXT/VISUAL provenance diagnostics.",
+      "Retain current request parameter and execution identity expectations."
+    ],
+    "openai": [
+      "Uses OpenAI Responses classes, not Chat Completions.",
+      "Uses the exact configured model and endpoint.",
+      "Uses output parsing with the dynamic Pydantic schema.",
+      "Attaches admitted images only.",
+      "Rejects missing output_parsed, malformed content, refusal, endpoint failure, and structured-output incompatibility.",
+      "Records provider=openai and adapter=openai_responses."
+    ],
+    "anthropic": [
+      "Uses Anthropic Messages, not an OpenAI-compatible endpoint.",
+      "Sends exact output_config JSON Schema without SDK schema simplification.",
+      "Sends base64 image blocks with admitted media type.",
+      "Rejects refusal, max-token truncation, blank or multiple payloads, non-text blocks, malformed JSON, schema mismatch, endpoint failure, and structured-output incompatibility.",
+      "Records provider=anthropic and adapter=anthropic_messages.",
+      "Never interprets Anthropic natural-language text as a fallback structured response."
+    ]
+  },
+  "regression_suite": {
+    "required_commands": [
+      "python -m pytest -q tests/test_provider_runtime.py",
+      "python -m pytest -q tests/test_nebius_chat_adapter.py",
+      "python -m pytest -q tests/test_evidence_extraction.py",
+      "python -m pytest -q tests/test_anthropic_messages_adapter.py",
+      "python -m pytest -q tests/test_provider_adapter_contract.py",
+      "python -m pytest -q tests/test_provider_vision_contract.py",
+      "python -m pytest -q tests/test_v4_case_behaviour.py",
+      "python -m pytest -q"
+    ],
+    "required_unchanged_behaviour": [
+      "All ten fixture-backed v4 case outcomes remain unchanged.",
+      "The existing Nebius request and validation tests remain green.",
+      "The application service still creates one immutable lineage per attempt.",
+      "Batch failures remain isolated.",
+      "Cached reopening creates zero provider runtimes.",
+      "The Gradio UI requires no provider-specific callback logic.",
+      "The CLI requires no provider-specific branching.",
+      "Existing persisted databases reconstruct without migration."
+    ],
+    "live_tests": {
+      "ordinary_suite": "Never enabled automatically.",
+      "minimum_transport_smoke": "Run the existing gated provider connection/contract test before the qualification pack.",
+      "qualification_pack": [
+        {
+          "case_id": "CB-2025-0004",
+          "purpose": "Persuasive fraud-report language must not become recognised Mastercard policy proof.",
+          "pass_condition": "The complete admitted result, deterministic grades, and recommendation do not treat report confidence or prose as a qualifying policy route."
+        },
+        {
+          "case_id": "CB-2025-0006",
+          "purpose": "Visible appearance must not establish hidden condition.",
+          "pass_condition": "Written caption, visible pixels, and limitations remain distinct; the image does not establish defect-free condition, no wobble, no hidden damage, complete listing match, or return-process completion."
+        },
+        {
+          "case_id": "CB-2025-0007",
+          "purpose": "Transaction-specific evidence must be found and cited on page 8.",
+          "pass_condition": "The admitted delivery record cites the correct document and page 8 and the deterministic address comparison uses the frozen shipping address."
+        }
+      ],
+      "nebius": "After the unchanged Nebius smoke test passes, run the full 0004/0006/0007 qualification pack in an isolated database.",
+      "openai": "Run the full 0004/0006/0007 qualification pack only with explicit approval and explicitly supplied OpenAI credentials/model.",
+      "anthropic": "Run the full 0004/0006/0007 qualification pack only with explicit approval and explicitly supplied Anthropic credentials/model.",
+      "isolation": "Each provider live test uses a new isolated SQLite database or temporary test directory.",
+      "no_cross_provider_execution": "A provider test must never invoke either of the other two providers.",
+      "qualification_statuses": {
+        "LIVE_VALIDATED": "The provider completed all three qualification cases through the real configured model and passed every case-specific semantic condition.",
+        "LIVE_VALIDATION_FAILED": "A real provider run was attempted but transport, schema, citation, admission, or a case-specific semantic condition failed.",
+        "IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED": "Offline adapter and shared contract tests pass, but the full live qualification pack was not completed, including when credentials are unavailable."
+      },
+      "reporting_rule": "A successful transport smoke test alone is not LIVE_VALIDATED."
+    }
+  },
+  "implementation_sequence": [
+    {
+      "step": 1,
+      "name": "Freeze current Nebius behaviour",
+      "actions": [
+        "Run current provider, Nebius adapter, extraction, v4 behaviour, and full tests.",
+        "Record current Nebius execution identity and request-shape expectations.",
+        "Verify committed database and rulebook checksums."
+      ],
+      "stop_condition": "Stop if the baseline differs from 321 passed, 1 skipped or a protected checksum fails."
+    },
+    {
+      "step": 2,
+      "name": "Lock the three-provider configuration contract",
+      "actions": [
+        "Add supported-provider validation.",
+        "Add OpenAI and Anthropic endpoint defaults.",
+        "Update configuration tests.",
+        "Prove unsupported names fail before transport construction."
+      ]
+    },
+    {
+      "step": 3,
+      "name": "Strengthen the shared visual-evidence boundary",
+      "actions": [
+        "Add VisionObservationResult and its deterministic EvidencePage.text renderer.",
+        "Add one versioned provider-neutral vision prompt with separate written-text, visible-pixel, and limitation sections.",
+        "Apply the contract to the existing Responses vision provider without changing fact extraction.",
+        "Add the CB-2025-0006 shared image contract tests.",
+        "Version new image conversions distinctly and preserve all historical EvidenceDocuments."
+      ]
+    },
+    {
+      "step": 4,
+      "name": "Register native OpenAI",
+      "actions": [
+        "Add create_openai_runtime.",
+        "Register openai.",
+        "Reuse existing Responses extractor and vision provider without behavioural changes.",
+        "Add native OpenAI runtime and identity tests."
+      ]
+    },
+    {
+      "step": 5,
+      "name": "Implement native Anthropic transport",
+      "actions": [
+        "Add bounded anthropic SDK dependency.",
+        "Implement client, fact extractor, and vision provider.",
+        "Use exact structured-output schema and base64 image blocks.",
+        "Add secret-safe failure translation and diagnostics."
+      ]
+    },
+    {
+      "step": 6,
+      "name": "Add cross-provider contract tests",
+      "actions": [
+        "Create common valid response fixtures.",
+        "Create common invalid response fixtures.",
+        "Prove canonical output types, equal controlled-fixture parsing, and shared local rejection boundaries.",
+        "Document that independent live model wording and values may differ.",
+        "Prove no partial downstream persistence."
+      ]
+    },
+    {
+      "step": 7,
+      "name": "Remove generic compatible route",
+      "actions": [
+        "Remove openai_compatible from PROVIDER_FACTORIES.",
+        "Update old runtime tests to expect a clear unsupported-provider failure.",
+        "Remove openai_compatible from active documentation.",
+        "Do not delete the reusable native OpenAI Responses adapter."
+      ]
+    },
+    {
+      "step": 8,
+      "name": "Run focused and complete regressions",
+      "actions": [
+        "Run all provider tests.",
+        "Run all extraction and fact-admission tests.",
+        "Run v4 all-case fixture acceptance.",
+        "Run the complete ordinary suite.",
+        "Verify protected database and policy hashes."
+      ]
+    },
+    {
+      "step": 9,
+      "name": "Run separately approved live qualification",
+      "actions": [
+        "Run the provider transport smoke test first.",
+        "Run CB-2025-0004, CB-2025-0006, and CB-2025-0007 against that same explicitly selected provider and model.",
+        "Run Nebius first to prove no fact-extraction regression and validate the amended visual boundary.",
+        "Run OpenAI or Anthropic only if the respective credentials and a compatible model are explicitly configured and the live execution is separately approved.",
+        "Record provider identity, per-case terminal status, and qualification outcome without recording credentials or raw evidence.",
+        "Label any provider without a completed three-case pack IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED."
+      ]
+    },
+    {
+      "step": 10,
+      "name": "Document operation and handoff",
+      "actions": [
+        "Update .env.example, README, and the v4 reproducibility guide.",
+        "Document exact provider values, model compatibility requirement, and fail-closed behaviour.",
+        "Report test results and any provider that could not complete the canonical contract."
+      ]
+    }
+  ],
+  "approval_gates": [
+    {
+      "gate_id": "P0",
+      "name": "Design approval",
+      "required_before": "Any provider implementation change",
+      "status": "APPROVED_WITH_AMENDMENTS",
+      "approval_scope": "Three explicit providers, shared visual-observation contract, identical deterministic treatment, and the 0004/0006/0007 qualification standard"
+    },
+    {
+      "gate_id": "P1",
+      "name": "Nebius baseline freeze",
+      "required_before": "Changing provider_runtime.py or shared adapter helpers"
+    },
+    {
+      "gate_id": "P2",
+      "name": "Three-provider fact and visual contract tests pass",
+      "required_before": "Any live OpenAI or Anthropic call"
+    },
+    {
+      "gate_id": "P3",
+      "name": "Complete offline regression",
+      "required_before": "Live-provider validation"
+    },
+    {
+      "gate_id": "P4",
+      "name": "Separate live-provider approval",
+      "required_before": "Each billable Nebius, OpenAI, or Anthropic smoke test"
+    },
+    {
+      "gate_id": "P5",
+      "name": "Three-case live qualification",
+      "required_before": "Describing a provider as LIVE_VALIDATED",
+      "required_cases": [
+        "CB-2025-0004",
+        "CB-2025-0006",
+        "CB-2025-0007"
+      ]
+    }
+  ],
+  "explicit_non_goals": [
+    "Automatic provider choice",
+    "Provider ranking",
+    "Provider fallback",
+    "Cross-provider retries",
+    "Load balancing",
+    "Cost-based routing",
+    "Model substitution",
+    "Model capability discovery",
+    "Provider-specific policy facts",
+    "Prompt variants by provider",
+    "Schema variants by provider",
+    "Unstructured JSON fallback",
+    "Response repair",
+    "Partial fact admission",
+    "Changes to OCR architecture",
+    "Changes to evaluation or recommendation semantics",
+    "Database migration",
+    "UI redesign",
+    "API expansion",
+    "Telemetry redesign"
+  ],
+  "risks_and_mitigations": [
+    {
+      "risk": "Refactoring shared code accidentally changes the validated Nebius request.",
+      "mitigation": "Keep the Nebius factory and adapters intact; add golden request and identity tests before new provider work."
+    },
+    {
+      "risk": "Anthropic rejects the dynamic schema because of JSON Schema complexity or unsupported keywords.",
+      "mitigation": "Fail with StructuredOutputUnsupportedError. Do not simplify or transform the canonical schema."
+    },
+    {
+      "risk": "A configured OpenAI model supports text but not image input or strict structured output.",
+      "mitigation": "Return a clear compatibility failure with no fallback or model substitution."
+    },
+    {
+      "risk": "Provider SDK exceptions contain credentials or request payloads.",
+      "mitigation": "Pass all provider error text through the existing secret sanitizer, truncate bounded diagnostics, and test exact secret exclusion."
+    },
+    {
+      "risk": "Provider-specific parsing bypasses canonical Pydantic validation.",
+      "mitigation": "Require every adapter to produce ExtractionResponse and run the same coverage validation before returning candidates."
+    },
+    {
+      "risk": "Removing openai_compatible surprises an existing local configuration.",
+      "mitigation": "Document the intentional supported-name change and fail clearly before transport construction."
+    },
+    {
+      "risk": "Live tests create non-reproducible or cross-contaminated persistence.",
+      "mitigation": "Use a separate database for every provider and never reuse a selection across provider tests."
+    },
+    {
+      "risk": "Different models produce semantically different observations despite identical temperature and schema settings.",
+      "mitigation": "Do not require identical live wording. Require the same evidence and instructions, the same canonical contracts and admission boundaries, the separate visual-observation fields, and successful 0004/0006/0007 live qualification before declaring a provider live validated."
+    },
+    {
+      "risk": "An image caption is treated as pixel-established truth or a limited view is treated as proof of hidden condition.",
+      "mitigation": "Require written_text_observations, visible_pixel_observations, and limitations as separate fields; render them into distinct canonical sections; retain TEXT versus VISUAL provenance; and fail the CB-2025-0006 qualification if forbidden hidden-condition inferences reach the admitted result."
+    }
+  ],
+  "definition_of_done": [
+    "PROVIDER_FACTORIES contains exactly nebius, openai, and anthropic.",
+    "Nebius fact extraction uses the same class, request shape, prompt, schema, parameters, endpoint default, and validation behaviour as the approved baseline.",
+    "All three vision routes validate VisionObservationResult, preserve written text separately from visible pixels, require limitations, and deterministically render into the existing EvidencePage.text boundary under a new converter version.",
+    "The CB-2025-0006 shared image contract proves that a caption claim, direct pixel observation, and view limitations remain distinct and do not establish hidden condition.",
+    "OpenAI uses the native Responses adapter with no Chat Completions or compatible-endpoint fallback.",
+    "Anthropic uses the native Messages API with exact JSON Schema structured output and native base64 image blocks.",
+    "All three adapters implement EvidenceCandidateExtractor and return the same canonical ExtractionCandidate tuple shape.",
+    "All three adapters encounter the same canonical schema, coverage, citation, source-scope, provenance, type, and cardinality boundaries.",
+    "Documentation and tests define provider equivalence as identical deterministic treatment, not identical independently generated live facts or wording.",
+    "Unsupported or incompatible providers fail clearly before any partial downstream result.",
+    "Execution lineage records exact non-secret provider, model, adapter, prompt version, schema version, and material parameters.",
+    "No API key appears in source, logs, errors, identity, SQLite, temporary artifact names, fixtures, or test output.",
+    "All existing v4 fixture-backed case outcomes remain unchanged.",
+    "Existing persisted results reopen without migration and without a provider call.",
+    "The complete ordinary regression suite passes.",
+    "The gated Nebius transport contract passes after the change.",
+    "A provider is called LIVE_VALIDATED only after CB-2025-0004, CB-2025-0006, and CB-2025-0007 all complete through that real provider and satisfy the qualification conditions.",
+    "Any provider lacking a completed qualification pack is labelled IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED; an attempted failure is labelled LIVE_VALIDATION_FAILED.",
+    "Operator documentation contains exact placeholder-only configuration examples for all three providers."
+  ],
+  "external_contract_basis": [
+    {
+      "provider": "openai",
+      "source": "https://platform.openai.com/docs/api-reference/responses",
+      "used_for": "Responses API structured JSON Schema output and image input"
+    },
+    {
+      "provider": "anthropic",
+      "source": "https://platform.claude.com/docs/en/build-with-claude/structured-outputs",
+      "used_for": "Messages API output_config.format JSON Schema structured output and documented incompatibility behaviour"
+    },
+    {
+      "provider": "anthropic",
+      "source": "https://platform.claude.com/docs/en/build-with-claude/vision",
+      "used_for": "Native base64 image content blocks"
+    },
+    {
+      "provider": "anthropic",
+      "source": "https://github.com/anthropics/anthropic-sdk-python",
+      "used_for": "Official Python SDK construction and Messages client"
+    }
+  ]
+}

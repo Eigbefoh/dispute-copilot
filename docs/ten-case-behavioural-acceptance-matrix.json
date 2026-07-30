@@ -1,0 +1,832 @@
+{
+  "matrix_metadata": {
+    "matrix_id": "take-home-v4-ten-case-behavioural-contract",
+    "version": "1.0.0",
+    "status": "PROPOSED_FOR_APPROVAL",
+    "created_at": "2026-07-30",
+    "cases_sha256": "81fccb87bbd49e64decce9aaa59b650078b5de6f7b8d5934d93e042fbaa80908",
+    "source_rulebook_version": "take-home-v3",
+    "target_rulebook_version": "take-home-v4",
+    "source_pdf_sha256": "32bcc199ee56ecc31b63f5d033d4a36b08dd01a3f6f365accfba85d51f4f18f8",
+    "derivation_rule": "Expected behaviour is derived from cases.json, supplied evidence, and the source Reason Codes PDF. Existing persisted recommendations are not treated as authority."
+  },
+  "global_contract": {
+    "grades": [
+      "SATISFIED",
+      "NOT_SATISFIED",
+      "NOT_ESTABLISHED",
+      "NOT_APPLICABLE"
+    ],
+    "recommendations": [
+      "RECOMMEND_REPRESENT",
+      "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+      "RECOMMEND_DO_NOT_REPRESENT"
+    ],
+    "rules": [
+      "NOT_FOUND never proves the opposite.",
+      "Relevant or persuasive evidence is not qualifying evidence unless it establishes an encoded source-derived route.",
+      "Model confidence and merchant confidence never bind to policy predicates.",
+      "Suggested analyst action is separate from recommendation.",
+      "All evidence citations use the original source filename and one-based page number; images use page 1.",
+      "Invalid extraction produces no partial downstream result."
+    ]
+  },
+  "cases": [
+    {
+      "case_id": "CB-2025-0001",
+      "scheme": "visa",
+      "reason_code": "13.1",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "ALL_APPLICABLE",
+      "evidence_supplied": [
+        "CB-2025-0001_delivery_confirmation.pdf",
+        "CB-2025-0001_carrier_tracking.pdf"
+      ],
+      "expected_qualifying_facts": [
+        "Royal Mail tracking number RM98421144GB.",
+        "Royal Mail carrier identity.",
+        "Delivered status on 24 March 2025.",
+        "Delivery to SW4 7QR.",
+        "Signature by WHITFORD.",
+        "Purchase shipping postcode SW4 7QR.",
+        "Chargeback date 18 April 2025."
+      ],
+      "relevant_but_insufficient_evidence": [],
+      "deliberate_ambiguity": [],
+      "facts_that_must_not_be_inferred": [
+        "Delivery proves the cardholder personally received or used the coat.",
+        "The issuer narrative is false merely because carrier records report delivery."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "V13.1-R1",
+          "description": "Proof of delivery",
+          "grade": "SATISFIED",
+          "basis": "Tracking number, carrier, delivered status, address and signature are established."
+        },
+        {
+          "requirement_id": "V13.1-R2",
+          "description": "Service rendered by expected date",
+          "grade": "NOT_APPLICABLE",
+          "basis": "The disputed purchase is merchandise, not a service."
+        },
+        {
+          "requirement_id": "V13.1-R3",
+          "description": "Delivery occurred by chargeback date",
+          "grade": "SATISFIED",
+          "basis": "24 March 2025 is before 18 April 2025."
+        },
+        {
+          "requirement_id": "V13.1-R4",
+          "description": "Delivery address matches address supplied at purchase",
+          "grade": "SATISFIED",
+          "basis": "Carrier delivery postcode and frozen purchase shipping postcode are both SW4 7QR."
+        }
+      ],
+      "expected_recommendation": "RECOMMEND_REPRESENT",
+      "missing_evidence": [],
+      "suggested_analyst_action": {
+        "action": "NO_ADDITIONAL_ACTION",
+        "requested_items": []
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0001_delivery_confirmation.pdf",
+          "page": 1,
+          "supports": "Tracking, carrier, delivered event, postcode and signature."
+        },
+        {
+          "file": "CB-2025-0001_carrier_tracking.pdf",
+          "page": 1,
+          "supports": "Order shipping address, tracking linkage and delivery date."
+        }
+      ],
+      "source_basis": [
+        "P002-L013",
+        "P002-L014",
+        "P002-L016",
+        "P002-L017"
+      ],
+      "confidence": "VERIFIED"
+    },
+    {
+      "case_id": "CB-2025-0002",
+      "scheme": "visa",
+      "reason_code": "13.1",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "ALL_APPLICABLE",
+      "evidence_supplied": [
+        "CB-2025-0002_tracking_screenshot.png",
+        "CB-2025-0002_order_confirmation.pdf"
+      ],
+      "expected_qualifying_facts": [
+        "The screenshot reports tracking number 15441288821100 and DELIVERED on 10 April 2025.",
+        "The screenshot reports delivery to M1 7DR.",
+        "The order confirmation reports purchase shipping postcode M1 7DR.",
+        "The chargeback date is 2 May 2025."
+      ],
+      "relevant_but_insufficient_evidence": [
+        "The order confirmation does not identify tracking number 15441288821100.",
+        "Matching sender, date and address make the screenshot relevant, but do not uniquely bind that parcel to order LT-200931 or transaction txn_9931CD."
+      ],
+      "deliberate_ambiguity": [
+        "The issuer says the delivery address was not the cardholder's address while the merchant order says it was entered at checkout.",
+        "The supplied files do not contain a unique cross-document order-to-tracking reference."
+      ],
+      "facts_that_must_not_be_inferred": [
+        "The tracked parcel is necessarily the disputed order.",
+        "Delivery to M1 7DR proves it was the cardholder's verified address.",
+        "A delivered status proves personal receipt."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "V13.1-R1",
+          "description": "Proof of delivery",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "Delivery is reported, but the parcel is not uniquely linked to the disputed order or transaction."
+        },
+        {
+          "requirement_id": "V13.1-R2",
+          "description": "Service rendered by expected date",
+          "grade": "NOT_APPLICABLE",
+          "basis": "The disputed purchase is merchandise."
+        },
+        {
+          "requirement_id": "V13.1-R3",
+          "description": "Delivery occurred by chargeback date",
+          "grade": "SATISFIED",
+          "basis": "The reported delivery date is before the chargeback date."
+        },
+        {
+          "requirement_id": "V13.1-R4",
+          "description": "Delivery address matches address supplied at purchase",
+          "grade": "SATISFIED",
+          "basis": "The tracking screenshot and order confirmation both report M1 7DR."
+        }
+      ],
+      "expected_recommendation": "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+      "missing_evidence": [
+        "A carrier or fulfilment record linking tracking number 15441288821100 to order LT-200931 or transaction txn_9931CD."
+      ],
+      "suggested_analyst_action": {
+        "action": "REQUEST_SPECIFIC_EVIDENCE",
+        "requested_items": [
+          "Request a dispatch or carrier record that links the tracking number to the disputed order."
+        ]
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0002_tracking_screenshot.png",
+          "page": 1,
+          "supports": "Reported tracking number, delivered date and delivery address."
+        },
+        {
+          "file": "CB-2025-0002_order_confirmation.pdf",
+          "page": 1,
+          "supports": "Order identity and purchase shipping address."
+        }
+      ],
+      "source_basis": [
+        "P002-L013",
+        "P002-L014",
+        "P002-L016",
+        "P002-L017"
+      ],
+      "confidence": "VERIFIED_WITH_EXPLICIT_LINKAGE_GAP"
+    },
+    {
+      "case_id": "CB-2025-0003",
+      "scheme": "mastercard",
+      "reason_code": "4837",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "ANY_TWO",
+      "evidence_supplied": [
+        "CB-2025-0003_avs_cvv_log.pdf",
+        "CB-2025-0003_3ds_authentication.pdf"
+      ],
+      "expected_qualifying_facts": [
+        "Full AVS match Y.",
+        "CVV match M.",
+        "Successful Mastercard Identity Check authentication."
+      ],
+      "relevant_but_insufficient_evidence": [
+        "A returning device seen three times is not the source-defined prior-transaction route without two prior undisputed transactions and matching billing details."
+      ],
+      "deliberate_ambiguity": [],
+      "facts_that_must_not_be_inferred": [
+        "The returning device establishes two prior undisputed transactions.",
+        "Successful authentication proves physical delivery."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "MC4837-R1",
+          "description": "Full AVS and CVV match",
+          "grade": "SATISFIED",
+          "basis": "The gateway log records AVS Y/full match and CVV M/match."
+        },
+        {
+          "requirement_id": "MC4837-R2",
+          "description": "Successful 3D Secure authentication",
+          "grade": "SATISFIED",
+          "basis": "Mastercard Identity Check is recorded as AUTHENTICATED."
+        },
+        {
+          "requirement_id": "MC4837-R3",
+          "description": "Two prior undisputed matching transactions",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "No qualifying prior-transaction records are supplied."
+        },
+        {
+          "requirement_id": "MC4837-R4",
+          "description": "Signed delivery to billing address",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "No delivery evidence is supplied."
+        }
+      ],
+      "expected_recommendation": "RECOMMEND_REPRESENT",
+      "missing_evidence": [],
+      "suggested_analyst_action": {
+        "action": "NO_ADDITIONAL_ACTION",
+        "requested_items": []
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0003_avs_cvv_log.pdf",
+          "page": 1,
+          "supports": "AVS, CVV and authentication gateway results."
+        },
+        {
+          "file": "CB-2025-0003_3ds_authentication.pdf",
+          "page": 1,
+          "supports": "Successful Mastercard Identity Check authentication."
+        }
+      ],
+      "source_basis": [
+        "P004-L004",
+        "P004-L005",
+        "P004-L006",
+        "P004-L007",
+        "P004-L008"
+      ],
+      "confidence": "VERIFIED"
+    },
+    {
+      "case_id": "CB-2025-0004",
+      "scheme": "mastercard",
+      "reason_code": "4837",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "ANY_TWO",
+      "release_blocking": true,
+      "evidence_supplied": [
+        "CB-2025-0004_internal_fraud_report.pdf"
+      ],
+      "expected_qualifying_facts": [
+        "Frozen case metadata records AVS N and CVV N.",
+        "Frozen case metadata records 3DS not_attempted.",
+        "The report states the customer account was new and this was the first transaction."
+      ],
+      "relevant_but_insufficient_evidence": [
+        "Internal risk score 42/100 LOW.",
+        "Merchant conclusion that the transaction passed internal screening.",
+        "Merchant confidence that the transaction is legitimate.",
+        "Low transaction amount, standard MCC risk, off-peak timing, low velocity and no blocklist match."
+      ],
+      "deliberate_ambiguity": [
+        "Signed delivery evidence may exist but was not supplied."
+      ],
+      "facts_that_must_not_be_inferred": [
+        "A low risk score proves cardholder authorisation.",
+        "Merchant confidence proves legitimacy.",
+        "No internal blocklist match is an AVS, CVV, 3DS, prior-history or signed-delivery route.",
+        "Absence of signed-delivery evidence proves delivery did not occur."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "MC4837-R1",
+          "description": "Full AVS and CVV match",
+          "grade": "NOT_SATISFIED",
+          "basis": "The deterministic case record contains AVS N and CVV N."
+        },
+        {
+          "requirement_id": "MC4837-R2",
+          "description": "Successful 3D Secure authentication",
+          "grade": "NOT_SATISFIED",
+          "basis": "The deterministic case record contains 3DS not_attempted."
+        },
+        {
+          "requirement_id": "MC4837-R3",
+          "description": "Two prior undisputed matching transactions",
+          "grade": "NOT_SATISFIED",
+          "basis": "The merchant report states new account and first transaction."
+        },
+        {
+          "requirement_id": "MC4837-R4",
+          "description": "Signed delivery to billing address",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "No signed-delivery evidence is supplied."
+        }
+      ],
+      "expected_aggregation": {
+        "satisfied_routes": 0,
+        "maximum_possible_routes_from_current_unknowns": 1,
+        "any_two_result": "NOT_SATISFIED"
+      },
+      "expected_recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+      "business_disposition": "ACCEPT_LIABILITY",
+      "missing_evidence": [
+        "Successful Mastercard Identity Check record.",
+        "Two prior undisputed transactions with matching billing details.",
+        "Signed delivery to the billing address."
+      ],
+      "suggested_analyst_action": {
+        "action": "REQUEST_SPECIFIC_EVIDENCE",
+        "requested_items": [
+          "Request signed delivery to the billing address if such evidence exists.",
+          "Request qualifying prior undisputed transaction records if such records exist."
+        ]
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0004_internal_fraud_report.pdf",
+          "page": 1,
+          "supports": "Merchant risk assertions and the new-account/first-transaction statement."
+        }
+      ],
+      "source_basis": [
+        "P004-L004",
+        "P004-L005",
+        "P004-L006",
+        "P004-L007",
+        "P004-L008"
+      ],
+      "confidence": "VERIFIED_RELEASE_BLOCKER"
+    },
+    {
+      "case_id": "CB-2025-0005",
+      "scheme": "visa",
+      "reason_code": "12.6.1",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "ALL_APPLICABLE",
+      "evidence_supplied": [
+        "CB-2025-0005_invoice_order_A.pdf",
+        "CB-2025-0005_invoice_order_B.pdf"
+      ],
+      "expected_qualifying_facts": [
+        "Distinct invoice IDs RL-88291 and RL-88294.",
+        "Distinct order IDs RL-ORDER-44188 and RL-ORDER-44192.",
+        "Different item baskets.",
+        "Separate order and capture timestamps.",
+        "Distinct authorisation codes 442189 and 552781.",
+        "Separate delivery dates and tracking consignments."
+      ],
+      "relevant_but_insufficient_evidence": [
+        "The merchant's sentence that both charges are valid is not itself proof; the underlying distinct identifiers, baskets, timestamps and fulfilment records are qualifying evidence."
+      ],
+      "deliberate_ambiguity": [],
+      "facts_that_must_not_be_inferred": [
+        "Equal charge amounts prove duplicate processing.",
+        "The merchant's validity conclusion is determinative."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "V12.6.1-R1",
+          "description": "Two distinct purchases",
+          "grade": "SATISFIED",
+          "basis": "Different order IDs and different items are documented."
+        },
+        {
+          "requirement_id": "V12.6.1-R2",
+          "description": "Separate documentation for each purchase event",
+          "grade": "SATISFIED",
+          "basis": "Two invoices and separate fulfilment records are supplied."
+        },
+        {
+          "requirement_id": "V12.6.1-R3",
+          "description": "Timestamps and authorisation codes for both charges",
+          "grade": "SATISFIED",
+          "basis": "Both timestamps and distinct authorisation codes are present."
+        }
+      ],
+      "expected_recommendation": "RECOMMEND_REPRESENT",
+      "missing_evidence": [],
+      "suggested_analyst_action": {
+        "action": "NO_ADDITIONAL_ACTION",
+        "requested_items": []
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0005_invoice_order_A.pdf",
+          "page": 1,
+          "supports": "First purchase, transaction and fulfilment."
+        },
+        {
+          "file": "CB-2025-0005_invoice_order_B.pdf",
+          "page": 1,
+          "supports": "Second purchase, transaction and fulfilment."
+        }
+      ],
+      "source_basis": [
+        "P002-L007",
+        "P002-L008",
+        "P002-L009",
+        "P002-L010"
+      ],
+      "confidence": "VERIFIED"
+    },
+    {
+      "case_id": "CB-2025-0006",
+      "scheme": "visa",
+      "reason_code": "13.3",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "ALL_APPLICABLE",
+      "evidence_supplied": [
+        "CB-2025-0006_product_listing.pdf",
+        "CB-2025-0006_delivery_photo.png",
+        "CB-2025-0006_returns_policy.pdf"
+      ],
+      "expected_qualifying_facts": [
+        "The listing describes a Carlton armchair with sage velvet upholstery.",
+        "The image caption states Carlton Armchair (Sage), delivered 18 April 2025.",
+        "The visible image appears to show a sage-green armchair.",
+        "The caption states the photo is a front view only.",
+        "The general returns policy describes return and defective-item routes."
+      ],
+      "relevant_but_insufficient_evidence": [
+        "Visible type and colour support a limited visible-attribute comparison.",
+        "The front-view image cannot address the claimed wobble or hidden structural fault.",
+        "The general return policy does not show whether this cardholder requested, used, refused or completed a return process."
+      ],
+      "deliberate_ambiguity": [
+        "The photograph does not expose the chair's structural stability.",
+        "No case-specific return correspondence or inspection is supplied."
+      ],
+      "facts_that_must_not_be_inferred": [
+        "The chair does not wobble.",
+        "No hidden structural defect exists.",
+        "The chair is defect-free.",
+        "Every product feature matches the listing.",
+        "The customer completed, refused or failed to use a valid return route.",
+        "No visible damage means no damage exists."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "V13.3-R1",
+          "description": "Published item description",
+          "grade": "SATISFIED",
+          "basis": "The product listing supplies a published description."
+        },
+        {
+          "requirement_id": "V13.3-R2",
+          "description": "Delivered item matches description",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "Type and colour visibly align, but the front-view image cannot establish material condition or the alleged structural defect."
+        },
+        {
+          "requirement_id": "V13.3-R3",
+          "description": "Unused return route or post-complaint use and retention",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "A general return route is documented, but neither alternative has case-specific evidence."
+        }
+      ],
+      "expected_recommendation": "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+      "missing_evidence": [
+        "A case-specific inspection or multi-angle evidence addressing the alleged structural fault.",
+        "Case-specific return/refund correspondence and return-request search records.",
+        "Evidence of post-complaint use and retention if relying on that alternative route."
+      ],
+      "suggested_analyst_action": {
+        "action": "REQUEST_SPECIFIC_EVIDENCE",
+        "requested_items": [
+          "Request a case-specific inspection or evidence addressing the alleged wobble/leg seating.",
+          "Request return correspondence and merchant records showing whether a return route was offered and used.",
+          "Alternatively request evidence of post-complaint use and retention."
+        ]
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0006_product_listing.pdf",
+          "page": 1,
+          "supports": "Published product description."
+        },
+        {
+          "file": "CB-2025-0006_delivery_photo.png",
+          "page": 1,
+          "supports": "Caption text, visible armchair, sage-green appearance and front-view limitation."
+        },
+        {
+          "file": "CB-2025-0006_returns_policy.pdf",
+          "page": 1,
+          "supports": "General return/refund routes only."
+        }
+      ],
+      "source_basis": [
+        "P003-L005",
+        "P003-L006",
+        "P003-L007",
+        "P003-L008"
+      ],
+      "confidence": "VERIFIED_WITH_INTENTIONAL_LIMITATION"
+    },
+    {
+      "case_id": "CB-2025-0007",
+      "scheme": "mastercard",
+      "reason_code": "4855",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "ALL_APPLICABLE",
+      "evidence_supplied": [
+        "CB-2025-0007_consolidated_manifest.pdf"
+      ],
+      "expected_qualifying_facts": [
+        "The manifest has exactly 10 pages.",
+        "Page 8 contains transaction reference txn_7745MN.",
+        "Page 8 records collection from LS1 4DT at 11:30 on 22 April 2025.",
+        "Page 8 records delivery to LS9 8AA at 17:14 on 22 April 2025.",
+        "Page 8 records signed receipt by warehouse staff.",
+        "The frozen shipping postcode is LS9 8AA.",
+        "The chargeback date is 14 May 2025."
+      ],
+      "relevant_but_insufficient_evidence": [
+        "Routine shipment rows on pages 1 to 7 are unrelated to txn_7745MN.",
+        "The frozen billing postcode LS1 4DT is the collection location and must not replace the shipping/destination postcode."
+      ],
+      "deliberate_ambiguity": [],
+      "facts_that_must_not_be_inferred": [
+        "Failure to locate page 8 proves service was not rendered.",
+        "Billing postcode LS1 4DT is the delivery address.",
+        "Unrelated manifest rows support the disputed transaction."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "MC4855-R1",
+          "description": "Proof of delivery or service rendered",
+          "grade": "SATISFIED",
+          "basis": "The transaction-specific manifest entry records collection, delivery and signature."
+        },
+        {
+          "requirement_id": "MC4855-R2",
+          "description": "Delivery or service before chargeback",
+          "grade": "SATISFIED",
+          "basis": "22 April 2025 is before 14 May 2025."
+        },
+        {
+          "requirement_id": "MC4855-R3",
+          "description": "Delivery address matches cardholder records",
+          "grade": "SATISFIED",
+          "basis": "Destination LS9 8AA matches the frozen shipping postcode LS9 8AA."
+        }
+      ],
+      "expected_recommendation": "RECOMMEND_REPRESENT",
+      "missing_evidence": [],
+      "suggested_analyst_action": {
+        "action": "NO_ADDITIONAL_ACTION",
+        "requested_items": []
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0007_consolidated_manifest.pdf",
+          "page": 8,
+          "supports": "Transaction reference, collection, delivery, destination and signature."
+        }
+      ],
+      "source_basis": [
+        "P004-L017",
+        "P004-L018",
+        "P004-L019",
+        "P004-L020"
+      ],
+      "confidence": "VERIFIED_BURIED_EVIDENCE"
+    },
+    {
+      "case_id": "CB-2025-0008",
+      "scheme": "visa",
+      "reason_code": "13.2",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "ALL_APPLICABLE",
+      "evidence_supplied": [
+        "CB-2025-0008_subscription_terms.pdf"
+      ],
+      "expected_qualifying_facts": [
+        "The general terms describe recurring monthly billing.",
+        "The general terms describe dashboard and email cancellation methods.",
+        "The general terms state a five-day notification policy."
+      ],
+      "relevant_but_insufficient_evidence": [
+        "A general statement that members will be notified does not prove this customer was notified.",
+        "General terms do not prove this customer's original opt-in.",
+        "General cancellation methods do not prove the customer did not cancel.",
+        "The terms' assertion that they apply to all members does not prove case-specific execution."
+      ],
+      "deliberate_ambiguity": [
+        "The issuer says cancellation occurred on 18 March 2025; no merchant cancellation-search records are supplied."
+      ],
+      "facts_that_must_not_be_inferred": [
+        "This customer received an upcoming-charge notice.",
+        "This customer opted in.",
+        "This customer did not cancel.",
+        "The merchant followed its policy for this transaction."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "V13.2-R1",
+          "description": "Recurring terms and cancellation method",
+          "grade": "SATISFIED",
+          "basis": "The general terms establish policy content."
+        },
+        {
+          "requirement_id": "V13.2-R2",
+          "description": "Advance notification of upcoming charge",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "No customer-specific notification record is supplied."
+        },
+        {
+          "requirement_id": "V13.2-R3",
+          "description": "No cancellation request before billing",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "No scoped merchant search or request count is supplied."
+        },
+        {
+          "requirement_id": "V13.2-R4",
+          "description": "Original opt-in",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "No customer-specific opt-in record is supplied."
+        }
+      ],
+      "expected_recommendation": "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+      "missing_evidence": [
+        "Customer-specific upcoming-charge notification record.",
+        "Scoped cancellation-request search covering the period before billing.",
+        "Customer-specific original opt-in record."
+      ],
+      "suggested_analyst_action": {
+        "action": "REQUEST_SPECIFIC_EVIDENCE",
+        "requested_items": [
+          "Request the customer's opt-in event.",
+          "Request the actual renewal notification delivery record.",
+          "Request a scoped cancellation-request search and any cancellation correspondence."
+        ]
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0008_subscription_terms.pdf",
+          "page": 1,
+          "supports": "General recurring, cancellation and notification policy content."
+        }
+      ],
+      "source_basis": [
+        "P002-L020",
+        "P002-L021",
+        "P002-L022",
+        "P003-L001",
+        "P003-L002"
+      ],
+      "confidence": "VERIFIED_GENERAL_POLICY_LIMITATION"
+    },
+    {
+      "case_id": "CB-2025-0009",
+      "scheme": "mastercard",
+      "reason_code": "4859",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "ALL_APPLICABLE",
+      "evidence_supplied": [
+        "CB-2025-0009_booking_confirmation.pdf",
+        "CB-2025-0009_cancellation_policy.pdf",
+        "CB-2025-0009_front_desk_log.pdf"
+      ],
+      "expected_qualifying_facts": [
+        "Booking MSP-2025-4488 for 26 to 27 April 2025.",
+        "Non-refundable 215 EUR rate.",
+        "Policy disclosed and accepted by tick-box on 12 March 2025.",
+        "Front-desk log records NO-SHOW at 00:30 on 27 April 2025.",
+        "The policy applies the full charge to no-show.",
+        "The disputed/booking amount is 215 EUR."
+      ],
+      "relevant_but_insufficient_evidence": [],
+      "deliberate_ambiguity": [
+        "No cancellation timestamp is supplied, so the late-cancellation alternative is not evaluated for this case; the independently sufficient NO-SHOW route is established."
+      ],
+      "facts_that_must_not_be_inferred": [
+        "No cancellation occurred merely because no cancellation record is supplied.",
+        "The model decides whether a cancellation was late.",
+        "A date-only value is silently treated as a precise timestamp."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "MC4859-R1",
+          "description": "Original reservation",
+          "grade": "SATISFIED",
+          "basis": "The booking confirmation identifies the reservation and service dates."
+        },
+        {
+          "requirement_id": "MC4859-R2",
+          "description": "Policy disclosed at booking",
+          "grade": "SATISFIED",
+          "basis": "The accepted policy records disclosure and tick-box consent."
+        },
+        {
+          "requirement_id": "MC4859-R3",
+          "description": "No-show or late cancellation",
+          "grade": "SATISFIED",
+          "basis": "The front-desk log records exact status NO-SHOW."
+        },
+        {
+          "requirement_id": "MC4859-R4",
+          "description": "Fee matches policy",
+          "grade": "SATISFIED",
+          "basis": "The booking amount is 215 EUR and the accepted policy makes the full amount non-refundable for no-show."
+        }
+      ],
+      "expected_recommendation": "RECOMMEND_REPRESENT",
+      "missing_evidence": [],
+      "suggested_analyst_action": {
+        "action": "NO_ADDITIONAL_ACTION",
+        "requested_items": []
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0009_booking_confirmation.pdf",
+          "page": 1,
+          "supports": "Reservation, stay dates and amount."
+        },
+        {
+          "file": "CB-2025-0009_cancellation_policy.pdf",
+          "page": 1,
+          "supports": "Policy disclosure, consent and full-charge no-show rule."
+        },
+        {
+          "file": "CB-2025-0009_front_desk_log.pdf",
+          "page": 1,
+          "supports": "NO-SHOW attendance status."
+        }
+      ],
+      "source_basis": [
+        "P005-L010",
+        "P005-L011",
+        "P005-L012",
+        "P005-L013",
+        "P005-L014"
+      ],
+      "confidence": "VERIFIED"
+    },
+    {
+      "case_id": "CB-2025-0010",
+      "scheme": "visa",
+      "reason_code": "10.5",
+      "applicable_policy_version": "take-home-v4",
+      "aggregation": "POLICY_DEFAULT",
+      "evidence_supplied": [
+        "CB-2025-0010_3ds_authentication.pdf",
+        "CB-2025-0010_delivery_confirmation.pdf"
+      ],
+      "expected_qualifying_facts": [],
+      "relevant_but_insufficient_evidence": [
+        "Successful Visa Secure authentication.",
+        "Delivery confirmation and signature.",
+        "Three prior undisputed orders.",
+        "These may be compelling under other fraud routes but do not prove issuer miscoding under Visa 10.5."
+      ],
+      "deliberate_ambiguity": [
+        "No evidence identifies a different correct reason code or proves the issuer's 10.5 classification was erroneous."
+      ],
+      "facts_that_must_not_be_inferred": [
+        "Successful 3DS proves Visa 10.5 was miscoded.",
+        "Delivery proves Visa 10.5 was miscoded.",
+        "Prior transactions prove Visa 10.5 was miscoded."
+      ],
+      "expected_requirement_outcomes": [
+        {
+          "requirement_id": "V10.5-R1",
+          "description": "Issuer miscoding exception",
+          "grade": "NOT_ESTABLISHED",
+          "basis": "No evidence establishes that the issuer used the wrong reason code."
+        }
+      ],
+      "expected_recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+      "business_disposition": "ACCEPT_LIABILITY",
+      "missing_evidence": [
+        "Evidence identifying and substantiating the correct alternative classification, sufficient to prove issuer miscoding."
+      ],
+      "suggested_analyst_action": {
+        "action": "NO_ADDITIONAL_ACTION",
+        "requested_items": []
+      },
+      "required_citations": [
+        {
+          "file": "CB-2025-0010_3ds_authentication.pdf",
+          "page": 1,
+          "supports": "Relevant authentication evidence that does not establish miscoding."
+        },
+        {
+          "file": "CB-2025-0010_delivery_confirmation.pdf",
+          "page": 1,
+          "supports": "Relevant delivery/prior-history evidence that does not establish miscoding."
+        }
+      ],
+      "source_basis": [
+        "P001-L012",
+        "P001-L013",
+        "P005-L020"
+      ],
+      "confidence": "VERIFIED_POLICY_DEFAULT"
+    }
+  ]
+}

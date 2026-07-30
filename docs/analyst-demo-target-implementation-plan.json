@@ -1,0 +1,598 @@
+{
+  "plan_metadata": {
+    "plan_id": "dispute-copilot-analyst-demo-v1",
+    "plan_version": "1.0.0",
+    "created_date": "2026-07-30",
+    "status": "PROPOSED_FOR_APPROVAL",
+    "execution_mode": "phased_with_quality_gates",
+    "primary_objective": "Deliver a credible analyst-facing Gradio demo that can run all supplied cases through the real backend, isolate per-case failures, persist successful results, and navigate completed analyst-review packages.",
+    "supersedes_as_current_priority": "dispute-copilot-policy-v4-redesign",
+    "paused_programme_checkpoint": "Policy-v4 P1 complete; P2 through P8 not started"
+  },
+  "current_checkpoint": {
+    "working_pipeline": "take-home-v3",
+    "runtime_status": "PRESERVED_AND_OPERATIONAL",
+    "test_result": {
+      "passed": 291,
+      "failed": 0,
+      "skipped": 1,
+      "skipped_scope": "Explicitly gated live-provider integration test"
+    },
+    "changes_already_present": [
+      "Additive take-home-v3 lifecycle registry metadata",
+      "Complete take-home-v3 asset-hash fixture",
+      "Automated take-home-v3 immutability regression test",
+      "Policy-v4 repository change map",
+      "Non-executable source-derived semantic contracts for all 26 audited requirements",
+      "Strict Pydantic models and tests for those semantic contracts"
+    ],
+    "not_started": [
+      "Structured fact model v2",
+      "Predicate schema v3",
+      "New domain operators",
+      "Policy-specific outcome mapping",
+      "Executable take-home-v4 policies",
+      "Analyst-review package v2",
+      "Fresh v4 live extraction"
+    ],
+    "protected_assets": [
+      "data/rulebooks/take-home-v3/**",
+      "data/dispute_copilot.db",
+      "data/baselines/live-extraction-validation-v1/**",
+      "All historical run, selection, resolution, evaluation, recommendation, review-package and analyst-decision records"
+    ]
+  },
+  "delivery_principles": [
+    "Preserve take-home-v3 as the existing working and historical pipeline.",
+    "Do not mutate historical records or reinterpret v3 outputs.",
+    "Keep Gradio as a presentation adapter over an application service.",
+    "Use one immutable lineage per case attempt.",
+    "Persist sanitized failure outcomes as well as successful package identifiers.",
+    "Never store credentials, raw secrets or unredacted provider errors.",
+    "Never label cached persisted output as a live run.",
+    "Never let one case failure terminate the remaining batch.",
+    "Correct only policy defects approved as demo-critical.",
+    "Escalate rather than introducing an unsafe flat-fact shortcut."
+  ],
+  "scope": {
+    "included": [
+      "Application service for case catalogue, individual execution, batch execution, progress, review packages and evidence display targets",
+      "Persistent batch and per-case execution state",
+      "Targeted critical policy corrections",
+      "Real sequential execution of all ten supplied cases",
+      "Minimal multi-case adaptation of the existing Gradio interface",
+      "Persisted-result demo mode",
+      "One-command local demo startup and operator documentation"
+    ],
+    "deferred": [
+      "General structured-record framework beyond what a critical correction strictly requires",
+      "Complete policy-v4 semantic correction programme",
+      "Generic workflow scheduler or distributed job queue",
+      "Multi-user authentication and authorization",
+      "Remote deployment and production observability",
+      "New evidence upload and post-review continuation",
+      "REST or FastAPI unless a second client requires it",
+      "UI redesign",
+      "Provider comparison, replay and model experimentation",
+      "Automatic representment submission or any external action"
+    ]
+  },
+  "target_architecture": {
+    "application_layer": {
+      "proposed_package": "src/dispute_copilot/application",
+      "modules": [
+        {
+          "path": "models.py",
+          "responsibility": "Immutable application DTOs for case queue items, execution attempts, batches, progress events and analyst case views."
+        },
+        {
+          "path": "repository.py",
+          "responsibility": "Append-only SQLite persistence for demo batches and per-case attempts."
+        },
+        {
+          "path": "service.py",
+          "responsibility": "Stable case execution and retrieval API used by CLI and Gradio."
+        },
+        {
+          "path": "errors.py",
+          "responsibility": "Typed, sanitized application errors."
+        },
+        {
+          "path": "demo.py",
+          "responsibility": "One-command Gradio demo entry point and mode selection."
+        }
+      ],
+      "service_interface": [
+        {
+          "operation": "list_cases",
+          "signature": "list_cases() -> tuple[CaseQueueItem, ...]",
+          "behaviour": "Return every case from cases.json in source order, enriched with the latest persisted attempt state."
+        },
+        {
+          "operation": "run_case",
+          "signature": "run_case(case_id: str, *, execution_mode: LIVE) -> CaseExecutionResult",
+          "behaviour": "Create one fresh immutable lineage, execute every machine stage, persist status transitions, and return a completed package or sanitized failure."
+        },
+        {
+          "operation": "run_all_cases",
+          "signature": "run_all_cases(*, execution_mode: LIVE) -> Iterator[CaseProgressEvent]",
+          "behaviour": "Queue all cases, execute them sequentially, catch failures per case, persist each outcome, and continue."
+        },
+        {
+          "operation": "get_case_progress",
+          "signature": "get_case_progress(case_id: str) -> CaseQueueItem",
+          "behaviour": "Return the latest persisted state without invoking the pipeline."
+        },
+        {
+          "operation": "get_review_package",
+          "signature": "get_review_package(case_id: str) -> AnalystReviewPackage | None",
+          "behaviour": "Load and integrity-check the package linked from the latest completed attempt without rerunning extraction."
+        },
+        {
+          "operation": "get_case_view",
+          "signature": "get_case_view(case_id: str) -> AnalystCaseView",
+          "behaviour": "Assemble package, facts, citations, evidence display targets and lineage into a presentation DTO; return an explicitly empty detail state for non-completed cases."
+        },
+        {
+          "operation": "locate_evidence",
+          "signature": "locate_evidence(case_id: str) -> tuple[EvidenceDisplayTarget, ...]",
+          "behaviour": "Use the existing integrity-checked evidence presentation adapter; never discover undeclared directory files."
+        }
+      ]
+    },
+    "execution_orchestrator": {
+      "stage_order": [
+        "Load and validate case",
+        "Verify and fingerprint declared evidence",
+        "Persist immutable CaseRun",
+        "Select exact approved demo rulebook policy",
+        "Load and hash-check EvidenceBundle",
+        "Convert EvidenceDocuments",
+        "Perform configured live extraction",
+        "Admit validated facts and citations",
+        "Evaluate deterministic requirements",
+        "Create advisory recommendation",
+        "Create analyst-review package",
+        "Persist completed application attempt"
+      ],
+      "failure_rule": "Catch a typed or unexpected exception at the per-case boundary, sanitize it, mark only that attempt FAILED, emit a progress event, and continue the batch.",
+      "retry_rule": "An explicit retry creates a new attempt and new immutable pipeline lineage. A completed attempt is loaded for viewing and is never silently rerun.",
+      "provider_rule": "One configured provider and model are used exactly; no fallback or substitution."
+    },
+    "persistence": {
+      "database": "A dedicated demo or validation SQLite database selected at startup",
+      "new_tables": [
+        {
+          "name": "demo_batches",
+          "columns": [
+            "batch_id",
+            "created_at",
+            "started_at",
+            "completed_at",
+            "execution_mode",
+            "status",
+            "case_count",
+            "completed_count",
+            "failed_count"
+          ],
+          "constraints": [
+            "batch_id primary key",
+            "execution_mode is LIVE or CACHED_VIEW",
+            "credentials are prohibited"
+          ]
+        },
+        {
+          "name": "demo_case_attempts",
+          "columns": [
+            "attempt_id",
+            "batch_id",
+            "case_id",
+            "attempt_number",
+            "status",
+            "execution_mode",
+            "queued_at",
+            "started_at",
+            "completed_at",
+            "run_id",
+            "selection_id",
+            "resolution_id",
+            "evaluation_id",
+            "recommendation_id",
+            "review_package_id",
+            "sanitized_error_type",
+            "sanitized_error_message",
+            "content_hash"
+          ],
+          "constraints": [
+            "attempt_id primary key",
+            "unique case_id plus attempt_number",
+            "status is NOT_RUN, QUEUED, RUNNING, COMPLETED or FAILED",
+            "COMPLETED requires review_package_id",
+            "FAILED requires sanitized error fields and no fabricated package",
+            "no updates to upstream immutable lineage records"
+          ]
+        }
+      ],
+      "transaction_rules": [
+        "Persist QUEUED before execution.",
+        "Atomically persist RUNNING with start time.",
+        "Each upstream stage keeps its existing transaction and immutability rules.",
+        "Atomically finalize the application attempt as COMPLETED or FAILED.",
+        "Batch summary updates never overwrite individual case outcomes."
+      ]
+    },
+    "gradio": {
+      "existing_package": "src/dispute_copilot/human_review",
+      "design_rule": "Adapt the existing interface; do not rebuild it.",
+      "new_components": [
+        "Compact case queue or selector with all cases",
+        "Per-case status badge",
+        "Run All Cases button",
+        "Run Selected Case button",
+        "Clearly visible LIVE or CACHED RESULT label",
+        "Collapsible technical lineage section"
+      ],
+      "existing_components_to_reuse": [
+        "Case and transaction summary",
+        "Recommendation and rationale",
+        "Requirement checklist",
+        "Evidence gaps",
+        "Supporting facts and citations",
+        "PDF and image evidence viewer",
+        "Analyst action controls"
+      ],
+      "callback_rule": "Callbacks may call application-service operations and render returned DTOs only. They must not import policy evaluators, extraction adapters or recommendation mappers.",
+      "selection_behaviour": {
+        "COMPLETED": "Load the persisted package and evidence targets without rerunning.",
+        "NOT_RUN": "Clear prior case details and show NOT_RUN.",
+        "QUEUED": "Clear prior case details and show QUEUED.",
+        "RUNNING": "Clear prior case details and show RUNNING.",
+        "FAILED": "Clear prior case details and show sanitized failure information."
+      },
+      "batch_progress": "The Gradio callback consumes application-service progress events and yields queue-only updates while the backend processes each case."
+    },
+    "demo_modes": [
+      {
+        "mode": "LIVE",
+        "description": "Run controls invoke the real backend and configured provider once per case attempt.",
+        "requirements": [
+          "MODEL_PROVIDER",
+          "MODEL_NAME",
+          "MODEL_API_KEY",
+          "MODEL_BASE_URL",
+          "Dedicated writable validation database"
+        ]
+      },
+      {
+        "mode": "CACHED_VIEW",
+        "description": "Load only genuine persisted completed attempts and packages. Never call a provider or create a simulated result.",
+        "requirements": [
+          "Existing validation database containing completed attempts"
+        ],
+        "ui_rules": [
+          "Display CACHED RESULT prominently.",
+          "Disable live run controls.",
+          "Show NOT_RUN or FAILED for cases without a completed persisted package."
+        ]
+      }
+    ]
+  },
+  "critical_policy_scope": {
+    "versioning_strategy": {
+      "rulebook": "take-home-v4-demo",
+      "registry_status": "DEMO_VALIDATION_ONLY",
+      "reason": "Avoid claiming completion of the paused full policy-v4 fidelity programme.",
+      "construction": "Port all eight policies for exact catalogue coverage; change only approved critical semantics and record known non-critical inherited limitations.",
+      "historical_rule": "Never edit take-home-v3 or reuse a v3 downstream result as a v4-demo result."
+    },
+    "feasibility_gate": {
+      "objective": "Determine whether each critical correction can be represented safely with a narrow additive fact or predicate change.",
+      "required_output": [
+        "Exact facts and types required",
+        "Whether record-level pairing is required",
+        "Operators or domain predicates required",
+        "Extraction prompt and schema effect",
+        "Persistence compatibility effect",
+        "TRUE, FALSE and UNKNOWN contract cases"
+      ],
+      "escalate_if": [
+        "Visa 13.3 material description comparison requires probabilistic free-text judgement inside evaluation",
+        "A correction would count or compare unpaired parallel arrays",
+        "A record-search zero result cannot retain explicit scope and period",
+        "Mastercard 4859 timing cannot preserve booking, cancellation and policy-window association",
+        "Historical v3 payloads would need rewriting",
+        "An undefined threshold, tolerance or materiality rule must be invented"
+      ],
+      "decision": "If any escalation condition is true, pause that policy and request approval for the minimum structured-fact redesign before claiming all-case demo readiness."
+    },
+    "corrections": [
+      {
+        "policy": "Visa 13.3",
+        "requirements": ["V13.3-R2", "V13.3-R3"],
+        "target": [
+          "Compare source-qualified published and delivered attributes through approved deterministic rules.",
+          "Do not require photo, specification and serial routes cumulatively.",
+          "Evaluate return/non-use and post-complaint-use/retention as independent alternatives.",
+          "Require positive scoped zero-result evidence for non-use; NOT_FOUND remains UNKNOWN."
+        ]
+      },
+      {
+        "policy": "Mastercard 4859",
+        "requirements": ["MC4859-R3"],
+        "target": [
+          "Evaluate no-show OR cancellation after the calculated policy cutoff.",
+          "Preserve booking, service, cancellation and policy-window association.",
+          "Do not let any recorded cancellation satisfy the late-cancellation route."
+        ]
+      },
+      {
+        "policy": "Visa 10.5",
+        "requirements": ["V10.5-R1"],
+        "target": [
+          "Use an exception-proven outcome rule.",
+          "Default to the approved do-not-represent or accept-liability vocabulary when issuer miscoding is not positively proven.",
+          "Do not use generic insufficient evidence for the source-defined default."
+        ],
+        "approval_blocker": "Product owner must select the exact advisory vocabulary: RECOMMEND_DO_NOT_REPRESENT or ACCEPT_LIABILITY."
+      },
+      {
+        "policy": "Mastercard 4855",
+        "requirements": ["MC4855-R3"],
+        "target": [
+          "Replace exact full-address-to-postcode equality with the existing versioned material-address comparison.",
+          "Return UNKNOWN for non-comparable inputs."
+        ]
+      }
+    ]
+  },
+  "implementation_sequence": [
+    {
+      "phase": "D0",
+      "name": "Checkpoint and demo contract",
+      "tasks": [
+        "Preserve and commit the current P0/P1 checkpoint separately from demo work.",
+        "Record v3 hashes, database hashes and the 291-pass baseline.",
+        "Define application DTOs and service protocols before UI changes.",
+        "Define sanitized failure policy and demo-mode labels."
+      ],
+      "gate": [
+        "take-home-v3 immutability test passes.",
+        "No historical database changed.",
+        "No live provider call occurs."
+      ]
+    },
+    {
+      "phase": "D1",
+      "name": "Stable application service and persistence",
+      "tasks": [
+        "Implement case catalogue and queue DTOs.",
+        "Implement append-only batch and attempt repository.",
+        "Wrap existing pipeline stages in run_case.",
+        "Implement run_all_cases with per-case exception isolation.",
+        "Implement package, case-view and evidence retrieval.",
+        "Add a non-UI CLI or test harness for the service."
+      ],
+      "tests": [
+        "All ten cases list in source order.",
+        "State transitions follow NOT_RUN to QUEUED to RUNNING to COMPLETED or FAILED.",
+        "One injected failure does not prevent later cases from executing.",
+        "Completed packages load without rerunning.",
+        "Failed and unprocessed views contain no stale case details.",
+        "No credential appears in attempts or errors."
+      ],
+      "gate": [
+        "Application service can run fixture-backed cases without Gradio.",
+        "Failure isolation integration test passes.",
+        "Existing tests remain green."
+      ]
+    },
+    {
+      "phase": "D2",
+      "name": "Critical-policy feasibility and correction",
+      "tasks": [
+        "Run the critical-policy feasibility gate.",
+        "Escalate any required broad structured-fact redesign before coding it.",
+        "Create take-home-v4-demo only after feasibility approval.",
+        "Implement approved narrow facts, predicates and outcome mapping.",
+        "Port unchanged policies with explicit inherited-limitations metadata.",
+        "Add source-derived TRUE, FALSE and UNKNOWN tests for every corrected requirement."
+      ],
+      "gate": [
+        "No v3 asset changes.",
+        "Every corrected relationship is actually evaluated.",
+        "NOT_FOUND remains UNKNOWN.",
+        "Visa 10.5 has an approved default outcome.",
+        "All eight supplied case keys have an exact demo policy."
+      ]
+    },
+    {
+      "phase": "D3",
+      "name": "Real all-case validation",
+      "tasks": [
+        "Provision a fresh dedicated validation database.",
+        "Import the approved demo rulebook.",
+        "Run each supplied case sequentially through the application service.",
+        "Persist every completed package and every sanitized failure.",
+        "Capture non-secret model identity and existing lineage metadata.",
+        "Produce a ten-case validation summary."
+      ],
+      "gate": [
+        "All ten attempts reach COMPLETED or FAILED.",
+        "A failure does not terminate later attempts.",
+        "Every COMPLETED attempt links to an integrity-checked package.",
+        "No result is labelled live unless a provider call occurred.",
+        "No analyst decision or external action is automatically created."
+      ]
+    },
+    {
+      "phase": "D4",
+      "name": "Minimal multi-case Gradio adaptation",
+      "tasks": [
+        "Add the case queue and two run controls to the existing layout.",
+        "Add deterministic component reset for non-completed selections.",
+        "Bind selection to get_case_view.",
+        "Bind live run buttons to application-service progress events.",
+        "Reuse existing package and evidence rendering.",
+        "Add collapsible technical lineage and advisory/cached labels."
+      ],
+      "gate": [
+        "No policy or extraction module is imported by UI callbacks.",
+        "All ten cases appear.",
+        "Selecting each completed case displays only its persisted data.",
+        "Selecting FAILED or NOT_RUN clears prior details.",
+        "Existing analyst actions continue to work for completed packages."
+      ]
+    },
+    {
+      "phase": "D5",
+      "name": "Cached-result presentation mode",
+      "tasks": [
+        "Add explicit LIVE and CACHED_VIEW startup modes.",
+        "Disable provider execution in CACHED_VIEW.",
+        "Load completed packages from the selected database.",
+        "Label cached results and incomplete cases honestly."
+      ],
+      "gate": [
+        "Network and provider factories are not called in CACHED_VIEW.",
+        "No synthetic recommendation or package is created.",
+        "Cached completed cases remain inspectable with provider unavailable."
+      ]
+    },
+    {
+      "phase": "D6",
+      "name": "Demo packaging and local verification",
+      "tasks": [
+        "Add one documented startup command.",
+        "Document live configuration, validation database and cached mode.",
+        "Add a concise operator script for live and cached demonstrations.",
+        "Run offline tests and the gated provider test.",
+        "Perform one approved local ten-case live validation.",
+        "Manually verify case navigation, evidence display and stale-state clearing."
+      ],
+      "gate": [
+        "README instructions reproduce the demo from a clean shell.",
+        "Complete offline regression suite passes.",
+        "Gated provider test passes.",
+        "Demo starts with one command.",
+        "No remaining successful case lacks an analyst-review package."
+      ]
+    }
+  ],
+  "test_strategy": {
+    "unit": [
+      "Application state transitions",
+      "Sanitized error construction",
+      "Latest-attempt selection",
+      "Cached/live mode enforcement",
+      "Critical policy truth tables",
+      "No UNKNOWN inversion"
+    ],
+    "integration": [
+      "Application service over temporary SQLite",
+      "Per-case pipeline composition",
+      "Injected case failure followed by later successful case",
+      "Review-package and evidence retrieval",
+      "No stale result DTOs",
+      "take-home-v3 hash preservation"
+    ],
+    "ui": [
+      "Ten-case queue rendering",
+      "Run control visibility by mode",
+      "Selection refresh",
+      "Completed package rendering",
+      "FAILED and NOT_RUN clearing",
+      "Cached-result and advisory labels",
+      "Technical lineage collapse"
+    ],
+    "live": [
+      "Existing gated provider contract test",
+      "One controlled case before batch",
+      "Approved ten-case sequential validation",
+      "Persisted provider/model identity review",
+      "No secret persistence"
+    ]
+  },
+  "observability_and_limitations": {
+    "persist_now": [
+      "Provider",
+      "Model",
+      "Adapter",
+      "Prompt version",
+      "Schema version",
+      "Non-secret generation parameters",
+      "Stage identifiers and timestamps",
+      "Sanitized per-case error"
+    ],
+    "not_currently_available": [
+      "Successful raw provider response",
+      "Token usage",
+      "Request latency",
+      "Estimated model cost"
+    ],
+    "demo_rule": "Do not display unavailable metrics as zero. Display NOT RECORDED.",
+    "deferred_observability": "Token, latency and cost capture may be added after the demo unless the selected provider exposes them through a small, non-invasive adapter change."
+  },
+  "operator_commands_target": {
+    "live": "python -m dispute_copilot.application.demo --mode live --database data/demo-validation.db",
+    "cached": "python -m dispute_copilot.application.demo --mode cached --database data/demo-validation.db",
+    "offline_tests": "python -m pytest -q",
+    "gated_provider_test": "RUN_MODEL_PROVIDER_INTEGRATION=1 python -m pytest -q tests/test_lean_fact_resolution.py::test_real_provider_cb_2025_0006_contract"
+  },
+  "acceptance_criteria": [
+    "The UI lists all ten supplied cases.",
+    "Run All Cases invokes the real application backend once per case attempt.",
+    "A failed case does not terminate the batch.",
+    "Every successful case has a persisted immutable review package.",
+    "Selecting a completed case never reruns it.",
+    "Selecting an incomplete or failed case never displays stale prior-case data.",
+    "Facts retain direct citations and evidence display targets.",
+    "Recommendations are visibly advisory.",
+    "Cached results are visibly labelled and are never simulated.",
+    "take-home-v3 remains unchanged and readable.",
+    "The demo starts with one documented command."
+  ],
+  "approval_gates": [
+    {
+      "gate": "A1",
+      "decision": "Approve this target plan and application-service persistence design before implementation."
+    },
+    {
+      "gate": "A2",
+      "decision": "Approve or reject any structured-fact expansion identified by the critical-policy feasibility gate."
+    },
+    {
+      "gate": "A3",
+      "decision": "Choose Visa 10.5 default advisory vocabulary."
+    },
+    {
+      "gate": "A4",
+      "decision": "Approve the dedicated database and real ten-case live run, which incurs model calls."
+    }
+  ],
+  "definition_of_done": {
+    "backend": [
+      "Stable application service exists.",
+      "Per-case and batch attempts persist.",
+      "Failures are isolated.",
+      "Completed packages are retrievable without rerun."
+    ],
+    "policy": [
+      "Approved critical defects are corrected or explicitly blocked.",
+      "No v3 asset or historical result changed.",
+      "Known non-critical inherited limitations are disclosed."
+    ],
+    "ui": [
+      "All cases are navigable.",
+      "Run controls call only the application service.",
+      "Existing analyst presentation and workflow are preserved.",
+      "Cached and live outputs are distinguishable."
+    ],
+    "verification": [
+      "Offline tests pass.",
+      "Gated live-provider test passes.",
+      "All ten cases have persisted COMPLETED or FAILED attempts.",
+      "Every successful case opens correctly in the existing analyst UI.",
+      "README commands are locally reproduced."
+    ]
+  }
+}

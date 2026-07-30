@@ -13,6 +13,28 @@ from dispute_copilot.policy.fact_models import FactDefinition
 
 MetadataResolver = Callable[[CaseRun], FactValue | None]
 
+MERCHANDISE_MCCS = {
+    "5651",  # Family clothing stores
+    "5712",  # Furniture/home furnishings
+    "5732",  # Electronics stores
+}
+SERVICE_MCCS = {
+    "4214",  # Freight carriers
+    "5815",  # Digital goods/media
+    "7011",  # Lodging
+    "7512",  # Automobile rental
+    "7997",  # Membership clubs
+}
+
+
+def _purchase_type(run: CaseRun) -> str | None:
+    mcc = run.case_snapshot.transaction.merchant_mcc
+    if mcc in MERCHANDISE_MCCS:
+        return "MERCHANDISE"
+    if mcc in SERVICE_MCCS:
+        return "SERVICE"
+    return None
+
 
 @dataclass(frozen=True)
 class CaseMetadataBinding:
@@ -34,6 +56,14 @@ CASE_METADATA_BINDINGS: dict[str, CaseMetadataBinding] = {
         resolver=lambda run: (
             run.case_snapshot.transaction.billing_address_postcode
         ),
+    ),
+    "case_recorded_issuer_narrative": CaseMetadataBinding(
+        field_path="case_snapshot.issuer_narrative",
+        resolver=lambda run: run.case_snapshot.issuer_narrative,
+    ),
+    "case_recorded_purchase_type": CaseMetadataBinding(
+        field_path="case_snapshot.transaction.merchant_mcc",
+        resolver=_purchase_type,
     ),
     "case_recorded_reason_code": CaseMetadataBinding(
         field_path="case_snapshot.reason_code",

@@ -1,0 +1,698 @@
+{
+  "plan_metadata": {
+    "plan_id": "behaviour-first-case-correction-v1",
+    "title": "Behaviour-First Ten-Case Correction and Proof Plan",
+    "version": "1.0.0",
+    "created_at": "2026-07-30",
+    "status": "IN_PROGRESS",
+    "implementation_authorized": true,
+    "current_checkpoint": "G5_DEFAULT_VERSION_PROMOTED",
+    "live_v4_execution_authorized": true,
+    "all_case_live_execution_authorized": false,
+    "default_rulebook_version": "take-home-v4",
+    "g5_promotion": {
+      "approved": true,
+      "application_default": "take-home-v4",
+      "application_database_default": "data/v4-live-validation.db",
+      "policy_selection_cli_default": "take-home-v4",
+      "historical_take_home_v3_explicitly_selectable": true,
+      "historical_artifacts_modified": false,
+      "focused_test_result": "28 passed",
+      "ordinary_test_result": "321 passed, 1 skipped"
+    },
+    "g4_validation": {
+      "case_id": "CB-2025-0004",
+      "database": "data/v4-g4-cb-2025-0004.db",
+      "database_sha256": "742a93037414247173af7bd2b1c45c9f4f7928cee88597c1ea58b6a8c0d71f77",
+      "attempt_id": "07a48ac1-ab40-4913-a32c-e3ea2b3640a4",
+      "run_id": "6cd909f9-99c9-4b32-96c9-5ac764f6881e",
+      "selection_id": "eacfaca0-35f3-4128-86d8-13bc4a21d9a7",
+      "resolution_id": "2855af1b-c35b-4a38-9aa8-0a49c21da329",
+      "evaluation_id": "a607b542-3768-4431-9500-4f45277084a1",
+      "recommendation_id": "0c642cfc-3998-490e-8917-6013b7a5b320",
+      "review_package_id": "90e8a971-250d-4451-a2c1-581e93eaaf17",
+      "provider": "nebius",
+      "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+      "policy_id": "mastercard-4837-take-home-v4",
+      "recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+      "cached_reopen_verified_without_provider": true,
+      "ordinary_test_result": "317 passed, 1 skipped"
+    },
+    "supersedes": {
+      "document": "docs/policy-accuracy-and-demo-hardening-implementation-plan.json",
+      "scope": "The policy-correction sequence and its case acceptance criteria.",
+      "retained_later_work": [
+        "SQLite connection hardening",
+        "bounded secret-safe diagnostics",
+        "analyst UI clarity",
+        "provider telemetry"
+      ]
+    },
+    "baseline": {
+      "branch": "agent/live-extraction-validation-baseline",
+      "commit": "5c83c6fed300",
+      "historical_rulebook": "take-home-v3",
+      "historical_live_database": "data/demo-validation.db",
+      "historical_live_database_sha256": "953842e9b43731e1635fd81d36f2aee6f4f6ca6cd756efa65c79101e870e74fc"
+    }
+  },
+  "objective": {
+    "primary": "Define, approve, implement, and prove an evidence-grounded behavioural contract for every supplied case before undertaking broader platform hardening.",
+    "release_blocker": "CB-2025-0004 must complete end to end while treating its persuasive internal fraud report as relevant merchant-authored evidence that satisfies zero Mastercard 4837 qualifying routes.",
+    "required_distinctions": [
+      "Qualifying evidence that satisfies a scheme requirement.",
+      "Relevant evidence that does not satisfy a scheme requirement.",
+      "Evidence that may exist but was not found.",
+      "Ambiguous or conflicting evidence.",
+      "Evidence that cannot establish the claimed fact.",
+      "Qualifying evidence buried inside a long document."
+    ],
+    "required_analyst_outputs": [
+      "Current advisory recommendation.",
+      "Requirement-by-requirement outcome.",
+      "Supporting evidence and exact citations.",
+      "Missing or unresolved evidence.",
+      "Suggested analyst next action."
+    ],
+    "recommendation_rule": "Suggested analyst action is separate from RecommendationResult. REQUEST_MORE_EVIDENCE must never replace the recommendation derived from the currently admitted record."
+  },
+  "non_negotiable_invariants": [
+    "Preserve every take-home-v3 policy file, hash, persisted selection, run, result, review package, and analyst decision unchanged.",
+    "Introduce corrected behaviour only under a new additive take-home-v4 rulebook.",
+    "Do not change the default rulebook from v3 until the complete v4 acceptance suite is approved.",
+    "Model output may propose facts; deterministic validation alone admits them.",
+    "Document relevance, persuasive wording, model confidence, and merchant confidence have zero direct influence on deterministic policy evaluation.",
+    "NOT_FOUND never proves the opposite value.",
+    "AMBIGUOUS and CONFLICTING remain visible and cannot be silently collapsed into FOUND or NOT_FOUND.",
+    "Unsupported claims remain unsupported.",
+    "Invalid extraction remains fail-closed and produces no partial FactResolutionResult, evaluation, recommendation, or review package.",
+    "Corrections to extraction values occur at the exact schema, typing, normalisation, or provenance boundary that rejected them.",
+    "No fuzzy citation matching, unstructured fallback, silent output repair, provider substitution, or model substitution.",
+    "No case-ID-specific production logic.",
+    "Every rerun creates a new immutable attempt and lineage.",
+    "Every recommendation remains explicitly advisory.",
+    "A cached result reopens from persistence without a provider call."
+  ],
+  "approval_gates": [
+    {
+      "gate_id": "G0",
+      "name": "Plan approval",
+      "required_before": "Any implementation change."
+    },
+    {
+      "gate_id": "G1",
+      "name": "Ten-case behavioural matrix approval",
+      "required_before": "Changing policies, extraction contracts, predicates, recommendation mappings, or fixtures.",
+      "rule": "No expected outcome may be copied from an existing persisted recommendation without independent support from cases.json, supplied evidence, and the source rulebook."
+    },
+    {
+      "gate_id": "G2",
+      "name": "Source semantics approval",
+      "required_before": "Provisioning take-home-v4.",
+      "focus": [
+        "Mastercard 4837 qualifying-route aggregation",
+        "Visa 13.3 alternative comparison and return-route semantics",
+        "Mastercard 4859 no-show and late-cancellation boundary",
+        "Visa 10.5 default disposition"
+      ]
+    },
+    {
+      "gate_id": "G3",
+      "name": "Fixture-backed v4 acceptance",
+      "required_before": "Any live-provider v4 execution."
+    },
+    {
+      "gate_id": "G4",
+      "name": "Single-case live validation",
+      "required_before": "Running all ten cases live under v4."
+    },
+    {
+      "gate_id": "G5",
+      "name": "Default-version promotion",
+      "required_before": "Changing the application default from take-home-v3 to take-home-v4."
+    }
+  ],
+  "phase_sequence": [
+    {
+      "phase_id": "0",
+      "name": "Protect and verify the historical checkpoint",
+      "writes_allowed": [
+        "New audit reports and checksum manifests only."
+      ],
+      "tasks": [
+        "Record branch, commit, worktree status, Python version, dependency lock state, and database paths.",
+        "Run the complete ordinary test suite with python -m pytest -q.",
+        "Verify the committed data/demo-validation.db checksum.",
+        "Generate and verify a SHA-256 manifest for every take-home-v3 rulebook file.",
+        "Open historical databases read-only and record integrity_check, foreign_key_check, schema hashes, and table counts.",
+        "Do not migrate, vacuum, checkpoint, reconfigure, or rewrite historical databases."
+      ],
+      "stop_condition": "Stop if baseline tests fail or a historical checksum differs; report the discrepancy before continuing.",
+      "definition_of_done": [
+        "The baseline is reproducible.",
+        "The existing v3 pipeline remains available.",
+        "No historical file changed."
+      ]
+    },
+    {
+      "phase_id": "1",
+      "name": "Produce the ten-case behavioural acceptance matrix",
+      "implementation_rule": "This is a read-only evidence and policy audit. No production behaviour changes in this phase.",
+      "deliverables": [
+        "docs/ten-case-behavioural-acceptance-matrix.json",
+        "docs/ten-case-behavioural-acceptance-matrix.md",
+        "docs/ten-case-behavioural-evidence-audit.json"
+      ],
+      "required_matrix_fields": [
+        "case_id",
+        "scheme",
+        "reason_code",
+        "applicable_policy_version",
+        "evidence_supplied",
+        "expected_qualifying_facts",
+        "relevant_but_insufficient_evidence",
+        "deliberate_ambiguity",
+        "facts_that_must_not_be_inferred",
+        "expected_requirement_outcomes",
+        "expected_recommendation",
+        "missing_evidence",
+        "suggested_analyst_action",
+        "required_citations",
+        "source_basis",
+        "confidence",
+        "unresolved_semantic_questions"
+      ],
+      "audit_method": [
+        "Load scheme, reason code, case metadata, and declared filenames from the immutable case records.",
+        "Verify evidence hashes and file formats without modifying files.",
+        "Inspect every page of every PDF and every supplied image.",
+        "Record exact document page counts; do not rely on existing summaries.",
+        "Map source rulebook language to explicit qualifying routes, alternatives, examples, defaults, and non-qualifying evidence.",
+        "Classify every proposed fact as qualifying, relevant-but-insufficient, absent, ambiguous, conflicting, or unable to establish the claimed conclusion.",
+        "Derive expected requirement grades using three-valued logic.",
+        "Derive the recommendation from the approved requirement aggregation and recommendation mapping.",
+        "Derive suggested analyst action separately from the recommendation.",
+        "Mark any result that cannot be established from the source as unresolved rather than inventing an expected outcome."
+      ],
+      "case_inventory": [
+        {
+          "case_id": "CB-2025-0001",
+          "scheme": "visa",
+          "reason_code": "13.1",
+          "evidence": [
+            "CB-2025-0001_delivery_confirmation.pdf",
+            "CB-2025-0001_carrier_tracking.pdf"
+          ],
+          "acceptance_focus": "Determine whether the supplied delivery and tracking records satisfy each applicable Visa 13.1 route; do not equate a tracking identifier with completed delivery."
+        },
+        {
+          "case_id": "CB-2025-0002",
+          "scheme": "visa",
+          "reason_code": "13.1",
+          "evidence": [
+            "CB-2025-0002_tracking_screenshot.png",
+            "CB-2025-0002_order_confirmation.pdf"
+          ],
+          "acceptance_focus": "Distinguish order placement and tracking activity from qualifying proof of delivery."
+        },
+        {
+          "case_id": "CB-2025-0003",
+          "scheme": "mastercard",
+          "reason_code": "4837",
+          "evidence": [
+            "CB-2025-0003_avs_cvv_log.pdf",
+            "CB-2025-0003_3ds_authentication.pdf"
+          ],
+          "acceptance_focus": "Evaluate each recognised Mastercard 4837 route independently and apply only the source-approved aggregation."
+        },
+        {
+          "case_id": "CB-2025-0004",
+          "scheme": "mastercard",
+          "reason_code": "4837",
+          "evidence": [
+            "CB-2025-0004_internal_fraud_report.pdf"
+          ],
+          "acceptance_focus": "Release-blocking persuasive-but-non-qualifying evidence case.",
+          "fixed_behaviour": {
+            "avs_cvv_route": "NOT_SATISFIED because recorded AVS and CVV values are N.",
+            "three_ds_route": "NOT_SATISFIED because 3DS was not attempted.",
+            "prior_transactions_route": "NOT_SATISFIED because the account and transaction were new/first.",
+            "signed_delivery_route": "NOT_ESTABLISHED because signed delivery to the billing address is not supplied.",
+            "qualifying_routes_satisfied": 0,
+            "recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+            "business_disposition": "ACCEPT_LIABILITY",
+            "required_explanation": "The merchant report and confidence score are relevant assertions but do not satisfy a recognised Mastercard 4837 evidence route."
+          }
+        },
+        {
+          "case_id": "CB-2025-0005",
+          "scheme": "visa",
+          "reason_code": "12.6.1",
+          "evidence": [
+            "CB-2025-0005_invoice_order_A.pdf",
+            "CB-2025-0005_invoice_order_B.pdf"
+          ],
+          "acceptance_focus": "Establish duplicate-processing semantics from transaction-specific invoice evidence without assuming two documents necessarily prove an invalid duplicate."
+        },
+        {
+          "case_id": "CB-2025-0006",
+          "scheme": "visa",
+          "reason_code": "13.3",
+          "evidence": [
+            "CB-2025-0006_product_listing.pdf",
+            "CB-2025-0006_delivery_photo.png",
+            "CB-2025-0006_returns_policy.pdf"
+          ],
+          "acceptance_focus": "Limit visual evidence to visible attributes and preserve alternative product-comparison and return-route semantics.",
+          "forbidden_inferences": [
+            "The frame does not wobble.",
+            "No hidden structural defect exists.",
+            "The item is defect-free.",
+            "All product characteristics match the listing.",
+            "The customer used or completed a return route.",
+            "NOT_FOUND visible damage means no damage exists."
+          ]
+        },
+        {
+          "case_id": "CB-2025-0007",
+          "scheme": "mastercard",
+          "reason_code": "4855",
+          "evidence": [
+            "CB-2025-0007_consolidated_manifest.pdf"
+          ],
+          "acceptance_focus": "Find transaction txn_7745MN on page 8 of the 10-page manifest and compare collection/delivery postcode LS9 8AA with frozen shipping postcode LS9 8AA.",
+          "forbidden_behaviour": "Do not substitute billing postcode LS1 4DT for the shipping postcode."
+        },
+        {
+          "case_id": "CB-2025-0008",
+          "scheme": "visa",
+          "reason_code": "13.2",
+          "evidence": [
+            "CB-2025-0008_subscription_terms.pdf"
+          ],
+          "acceptance_focus": "Distinguish general subscription policy from customer-specific proof of notice, opt-in, non-cancellation, and policy execution."
+        },
+        {
+          "case_id": "CB-2025-0009",
+          "scheme": "mastercard",
+          "reason_code": "4859",
+          "evidence": [
+            "CB-2025-0009_booking_confirmation.pdf",
+            "CB-2025-0009_cancellation_policy.pdf",
+            "CB-2025-0009_front_desk_log.pdf"
+          ],
+          "acceptance_focus": "Recognise NO-SHOW without changing its meaning and calculate late cancellation deterministically from timestamps and the policy deadline."
+        },
+        {
+          "case_id": "CB-2025-0010",
+          "scheme": "visa",
+          "reason_code": "10.5",
+          "evidence": [
+            "CB-2025-0010_3ds_authentication.pdf",
+            "CB-2025-0010_delivery_confirmation.pdf"
+          ],
+          "acceptance_focus": "Apply the policy-defined default accept-liability/do-not-represent disposition when no qualifying exception route is established."
+        }
+      ],
+      "definition_of_done": [
+        "Every case has a populated matrix row.",
+        "Every expected outcome cites case data, evidence, and rulebook source.",
+        "Every unresolved interpretation is explicit.",
+        "Gate G1 approval is obtained before implementation."
+      ]
+    },
+    {
+      "phase_id": "2",
+      "name": "Diagnose and correct the CB-2025-0004 extraction boundary",
+      "priority": "RELEASE_CRITICAL",
+      "tasks": [
+        "Reproduce the current EvidenceCandidateValueError in a new isolated validation database with explicit debug diagnostics.",
+        "Identify the exact candidate path, requested fact, catalogue type, returned runtime type, provenance, and rejected value.",
+        "Classify the failure as provider schema, controlled vocabulary, value typing, cardinality, citation, or provenance incompatibility.",
+        "Add a narrow failing regression test before changing code.",
+        "Correct only the responsible provider schema, extraction prompt, controlled normalisation, or adapter boundary.",
+        "Retain strict local admission and reject the entire response if any candidate remains invalid.",
+        "Extract and cite factual report assertions without admitting the report's legitimacy conclusion or confidence score as a qualifying policy fact."
+      ],
+      "required_fact_behaviour": [
+        "AVS result N remains an observed recorded value.",
+        "CVV result N remains an observed recorded value.",
+        "3DS not attempted remains an observed recorded status.",
+        "New account/first transaction remains a merchant-record assertion.",
+        "No signed-delivery fact is admitted unless supplied evidence establishes it.",
+        "Merchant confidence or legitimacy conclusion is retained only as a source-qualified non-qualifying assertion if displayed."
+      ],
+      "policy_behaviour": [
+        "Evaluate all recognised Mastercard 4837 routes independently.",
+        "Zero routes may be marked satisfied.",
+        "Apply the source-approved aggregation and default disposition.",
+        "Produce RECOMMEND_DO_NOT_REPRESENT / ACCEPT_LIABILITY.",
+        "List the exact qualifying evidence that could change each route.",
+        "Do not turn a suggested REQUEST_MORE_EVIDENCE action into the recommendation."
+      ],
+      "tests": [
+        "CB-2025-0004 completes without EvidenceCandidateValueError.",
+        "The same invalid untrusted value still fails closed in a contract test.",
+        "Merchant confidence values cannot appear in any qualifying predicate binding.",
+        "Changing the report's confidence score does not change grades or recommendation.",
+        "No partial resolution or recommendation is created from invalid provider output.",
+        "All citations resolve to the correct fraud-report page."
+      ],
+      "definition_of_done": [
+        "A fixture-backed immutable attempt completes with zero satisfied Mastercard 4837 routes.",
+        "The persisted package clearly separates report assertions from qualifying evidence.",
+        "The result reopens without provider execution."
+      ]
+    },
+    {
+      "phase_id": "3",
+      "name": "Implement the approved additive take-home-v4 semantics",
+      "prerequisites": [
+        "Gate G1",
+        "Gate G2"
+      ],
+      "new_rulebook_path": "data/rulebooks/take-home-v4",
+      "rulebook_rules": [
+        "Provision all eight policy keys, even where four remain semantically equivalent to approved v3 behaviour.",
+        "Give every v4 policy a new policy ID, snapshot hash, exact citations, and registered facts.",
+        "Never update a v3 policy row or selection snapshot.",
+        "Validate all policies and facts in a fresh database before use."
+      ],
+      "case_corrections": [
+        {
+          "case_id": "CB-2025-0004",
+          "change": "Encode each Mastercard 4837 qualifying route as an independently traceable requirement or predicate branch and preserve the source-approved aggregation/default."
+        },
+        {
+          "case_id": "CB-2025-0006",
+          "change": "Represent photos, specifications, and serial matching as source-approved alternatives rather than universal cumulative facts; model return/non-use and post-complaint-use/retention as alternative routes.",
+          "guardrail": "Visual non-observation of damage is never evidence that no damage exists."
+        },
+        {
+          "case_id": "CB-2025-0007",
+          "change": "Compare the transaction-scoped delivery address/postcode with frozen shipping details; billing details may not replace shipping details.",
+          "predicate": "Use an approved deterministic address comparison with UNKNOWN for missing comparison inputs."
+        },
+        {
+          "case_id": "CB-2025-0008",
+          "change": "Separate GENERAL_POLICY assertions from CASE_SPECIFIC_EXECUTION assertions.",
+          "guardrail": "General terms cannot satisfy customer-specific notice, consent, cancellation, or execution requirements."
+        },
+        {
+          "case_id": "CB-2025-0009",
+          "change": "Use controlled NFKC/trim/casefold comparison for the exact NO-SHOW vocabulary and a deterministic timezone-aware deadline predicate.",
+          "boundary_tests": [
+            "One second before the deadline.",
+            "Exactly at the deadline.",
+            "One second after the deadline.",
+            "Missing timestamp.",
+            "Timezone-naive timestamp.",
+            "Chronologically reversed timestamps."
+          ]
+        },
+        {
+          "case_id": "CB-2025-0010",
+          "change": "Use a versioned policy-specific recommendation mapping that returns do-not-represent when the qualifying exception is not established.",
+          "guardrail": "The evaluator keeps UNKNOWN semantics; the policy-defined default is applied by deterministic recommendation mapping."
+        }
+      ],
+      "new_or_extended_contracts": [
+        {
+          "contract": "FactDefinition",
+          "change": "Add or enforce assertion_scope with GENERAL_POLICY, CASE_SPECIFIC_RECORD, VISUAL_OBSERVATION, and CASE_METADATA where needed.",
+          "reason": "Prevents general policy language from satisfying a case-specific requirement."
+        },
+        {
+          "contract": "PredicateNode",
+          "change": "Add only source-required generic operators such as fact-to-fact comparison and timezone-aware deadline comparison.",
+          "rule": "Operators must be scheme-agnostic and tested independently of case IDs."
+        },
+        {
+          "contract": "RecommendationMappingManifest",
+          "change": "Support exact policy/version-specific default dispositions followed by validated global fallbacks.",
+          "rule": "Reject zero matches, overlapping matches, lineage mismatch, and hash mismatch."
+        }
+      ],
+      "definition_of_done": [
+        "All v4 policies and citations validate.",
+        "All ten case keys have exact v4 coverage.",
+        "Every requested fact has one controlled definition.",
+        "No comparison, recommendation, or policy conclusion is delegated to the model.",
+        "v3 hashes and historical results remain unchanged."
+      ]
+    },
+    {
+      "phase_id": "4",
+      "name": "Guarantee complete document search and source-scoped evidence handling",
+      "tasks": [
+        "Verify PDF conversion processes every page in original order.",
+        "Verify CB-2025-0007 produces exactly 10 EvidencePage records.",
+        "Ensure the extraction request includes all converted pages within provider limits using deterministic page batching if necessary.",
+        "If batching is required, preserve document ID, page number, source hash, batch identity, and deterministic merge order.",
+        "Require transaction-specific facts to bind to the matching transaction identifier when a long document contains multiple records.",
+        "Require supporting_text to match canonical page text using only the shared tested Unicode/whitespace normalisation.",
+        "Never treat failure to find page-8 evidence as proof that delivery did not occur.",
+        "Mark incomplete conversion, omitted pages, or provider truncation as a typed failure or explicit NOT_FOUND/UNKNOWN according to the approved contract."
+      ],
+      "cb_2025_0007_acceptance": [
+        "The manifest page count is 10.",
+        "Transaction txn_7745MN is located on page 8.",
+        "The admitted delivery/collection postcode is LS9 8AA.",
+        "The citation points to page 8.",
+        "The comparison uses frozen shipping postcode LS9 8AA.",
+        "A regression test fails if billing postcode LS1 4DT is substituted.",
+        "Represent is recommended only if every applicable approved requirement is satisfied."
+      ],
+      "cb_2025_0008_acceptance": [
+        "Subscription terms are admitted as general policy assertions.",
+        "They do not establish customer notice, opt-in, non-cancellation, or case-specific execution.",
+        "Each missing customer-specific proof appears as an evidence gap."
+      ],
+      "tests": [
+        "PDF conversion preserves all pages and page numbers.",
+        "Batching neither drops nor duplicates pages.",
+        "Transaction-scoped extraction rejects facts from a different record.",
+        "Page-8 citation validation succeeds.",
+        "General-policy assertions cannot bind to case-specific predicates."
+      ]
+    },
+    {
+      "phase_id": "5",
+      "name": "Separate recommendation from suggested analyst action",
+      "new_contract": {
+        "name": "SuggestedAnalystAction",
+        "frozen": true,
+        "fields": [
+          "action_id: UUID",
+          "review_package_id: UUID",
+          "action: NO_ADDITIONAL_ACTION | REQUEST_SPECIFIC_EVIDENCE | VERIFY_CONFLICT | MANUAL_POLICY_REVIEW",
+          "requested_items: ordered tuple of specific evidence descriptions",
+          "causal_requirement_ids: ordered tuple of requirement IDs",
+          "generated_at: timezone-aware datetime",
+          "rules_version: string",
+          "content_hash: sha256"
+        ]
+      },
+      "assembly_rules": [
+        "RecommendationResult is assembled and frozen first.",
+        "SuggestedAnalystAction is deterministically derived from unresolved requirement bindings and approved policy evidence-route descriptions.",
+        "Suggested action cannot alter recommendation, grades, or workflow lineage.",
+        "REQUEST_SPECIFIC_EVIDENCE must name evidence capable of changing an unresolved route.",
+        "Do not request evidence for a route already deterministically disproven unless the approved policy allows rebuttal evidence.",
+        "The analyst review package displays recommendation and suggested action in separate sections."
+      ],
+      "cb_2025_0004_example": {
+        "recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+        "suggested_action": "REQUEST_SPECIFIC_EVIDENCE",
+        "possible_requested_items": [
+          "Evidence of successful 3D Secure authentication, if it exists.",
+          "Evidence of two prior undisputed transactions, if it exists.",
+          "Signed delivery evidence tied to the billing address, if operationally obtainable."
+        ],
+        "rule": "The final requested list must come from the approved Mastercard 4837 matrix, not this illustrative plan text."
+      },
+      "tests": [
+        "Changing suggested action does not change recommendation hash.",
+        "A do-not-represent recommendation may coexist with request-more-evidence.",
+        "Requested evidence maps to unresolved qualifying routes.",
+        "Cached package reopening does not regenerate or call a model."
+      ]
+    },
+    {
+      "phase_id": "6",
+      "name": "Persist, display, and reopen corrected packages",
+      "persistence_rules": [
+        "Use a new v4 validation database.",
+        "Persist each new run, selection, conversion, resolution, evaluation, recommendation, suggested action, and review package as an immutable record.",
+        "Link every aggregate through IDs and content hashes.",
+        "Reject duplicate selection, resolution, evaluation, recommendation, or package creation for the same immutable lineage.",
+        "Record failed attempts separately without partial downstream aggregates.",
+        "Never overwrite v3 rows or reuse a v3 policy snapshot for a v4 run."
+      ],
+      "review_package_display": [
+        "Current advisory recommendation and business-equivalent disposition.",
+        "Ordered requirement grades and deterministic basis.",
+        "Qualifying supporting evidence and citations.",
+        "Relevant-but-insufficient submitted evidence.",
+        "Missing, ambiguous, and conflicting evidence.",
+        "Facts that were deliberately not inferred.",
+        "Suggested analyst next action.",
+        "Rulebook, policy, model, prompt, schema, and aggregate lineage."
+      ],
+      "ui_rules": [
+        "Keep the existing Gradio layout.",
+        "Selecting a corrected completed case loads its persisted package without model execution.",
+        "Selecting a failed or unprocessed case clears the previous case's recommendation, facts, evidence, citations, gaps, and action.",
+        "Label reopened results PERSISTED/CACHED.",
+        "Recommendations remain visibly advisory."
+      ],
+      "tests": [
+        "A persisted v4 package equals its reconstructed aggregate.",
+        "Restarting the application and reopening a package creates zero provider calls.",
+        "Cross-case switching never displays stale evidence or recommendation.",
+        "A failed attempt has no downstream aggregate IDs."
+      ]
+    },
+    {
+      "phase_id": "7",
+      "name": "Execute the complete proof sequence",
+      "execution_order": [
+        {
+          "step": 1,
+          "name": "Contract tests",
+          "scope": "Catalogue, assertion scope, normalisation, predicate logic, recommendation defaults, suggested action, and lineage."
+        },
+        {
+          "step": 2,
+          "name": "Fixture-backed release blocker",
+          "scope": "CB-2025-0004."
+        },
+        {
+          "step": 3,
+          "name": "Fixture-backed sensitive cases",
+          "scope": "CB-2025-0006, CB-2025-0007, CB-2025-0008, CB-2025-0009, and CB-2025-0010."
+        },
+        {
+          "step": 4,
+          "name": "Fixture-backed all-case suite",
+          "scope": "All ten cases, each compared against the approved behavioural matrix."
+        },
+        {
+          "step": 5,
+          "name": "Full regression suite",
+          "command": "python -m pytest -q",
+          "rule": "Ordinary tests make zero live-provider calls."
+        },
+        {
+          "step": 6,
+          "name": "Single live v4 case",
+          "approval": "Gate G4",
+          "preferred_case": "CB-2025-0004 after fixture acceptance",
+          "rule": "Use a new validation database and configured provider; preserve all failures honestly."
+        },
+        {
+          "step": 7,
+          "name": "All-case live validation",
+          "approval": "Separate approval after the single live case.",
+          "rule": "One case failure does not terminate later cases; every status or safe error is persisted."
+        },
+        {
+          "step": 8,
+          "name": "Restart and cached reopening proof",
+          "scope": "Every completed corrected package."
+        }
+      ],
+      "required_regressions": [
+        "0004: confident merchant language satisfies zero Mastercard 4837 routes.",
+        "0004: confidence-score changes do not affect recommendation.",
+        "0007: page-8 evidence is found and cited.",
+        "0007: shipping postcode is used instead of billing.",
+        "0006: visible facts are admitted but hidden condition is not inferred.",
+        "0008: general terms are not customer-specific proof.",
+        "0009: NO-SHOW normalisation preserves meaning.",
+        "0009: late-cancellation deadline boundaries are deterministic.",
+        "0010: the policy-specific default outcome is do-not-represent.",
+        "Missing evidence never becomes proof of the opposite.",
+        "Invalid provider output creates no partial downstream result.",
+        "Corrected packages persist and reopen without provider execution.",
+        "Cases 0001, 0002, 0003, and 0005 remain consistent with their approved matrix rows."
+      ]
+    },
+    {
+      "phase_id": "8",
+      "name": "Resume deferred hardening only after behavioural acceptance",
+      "prerequisite": "Phases 0 through 7 pass and the behavioural report is approved.",
+      "deferred_work": [
+        "Enable PRAGMA foreign_keys=ON and busy_timeout on every mutable repository connection through a shared connection factory.",
+        "Add controlled backup, verification, WAL, and migration handling for mutable databases.",
+        "Persist bounded secret-safe failure diagnostics.",
+        "Show separate machine and analyst workflow state, trusted analyst identity, evidence auto-selection, and attempt history.",
+        "Persist provider latency, token usage, model identity, and optional versioned cost calculations."
+      ],
+      "rule": "These improvements may not be used to postpone or mask a behavioural mismatch."
+    }
+  ],
+  "technical_boundaries": {
+    "probabilistic": [
+      "Document OCR or visual description.",
+      "Candidate evidence assertions and observations."
+    ],
+    "deterministic": [
+      "Case metadata resolution.",
+      "Candidate schema and value validation.",
+      "Citation and source-scope validation.",
+      "Fact admission.",
+      "Predicate interpretation.",
+      "Requirement aggregation.",
+      "Policy-specific recommendation mapping.",
+      "Suggested analyst action mapping.",
+      "Persistence and lineage validation."
+    ],
+    "prohibited_model_tasks": [
+      "Decide whether a requirement is satisfied.",
+      "Decide whether cancellation was late.",
+      "Decide whether a general policy was followed for this customer.",
+      "Decide whether visible appearance proves hidden condition.",
+      "Choose the recommendation.",
+      "Choose the final analyst decision."
+    ]
+  },
+  "failure_behaviour": {
+    "invalid_extraction": "Fail the attempt; persist no partial fact resolution or downstream result.",
+    "missing_page_or_truncation": "Return a typed conversion/extraction failure or approved NOT_FOUND/UNKNOWN state; never infer the negative event.",
+    "citation_mismatch": "Reject the candidate with precise safe diagnostics; do not fuzzy match.",
+    "ambiguous_or_conflicting_fact": "Preserve the status and candidates with provenance; deterministic evaluation returns UNKNOWN unless an approved operator explicitly resolves it.",
+    "missing_policy_or_mapping": "Fail closed before evaluation or recommendation.",
+    "lineage_or_hash_mismatch": "Reject reconstruction and surface an integrity failure.",
+    "single_case_batch_failure": "Persist FAILED for that attempt and continue with remaining cases."
+  },
+  "completion_report": {
+    "required_sections": [
+      "Completed ten-case behavioural matrix.",
+      "Exact code, schema, fact-catalogue, policy, predicate, and mapping changes.",
+      "New rulebook version and integrity hashes.",
+      "Test commands and exact outcomes.",
+      "New per-case immutable run results.",
+      "Recommendation and suggested action for every case.",
+      "Remaining evidence uncertainties.",
+      "Every implemented result that differs from its approved behavioural contract.",
+      "Proof that historical v3 hashes and results remain unchanged.",
+      "Proof that completed packages reopen without provider execution."
+    ],
+    "completion_rule": "Do not declare completion merely because code executes. Completion requires demonstrated agreement with the approved ten-case behavioural contract."
+  },
+  "final_definition_of_done": [
+    "Every supplied case has an approved evidence-grounded behavioural contract.",
+    "CB-2025-0004 completes with zero qualifying Mastercard 4837 routes and RECOMMEND_DO_NOT_REPRESENT.",
+    "CB-2025-0007 finds and cites transaction txn_7745MN on page 8 and compares LS9 8AA with shipping LS9 8AA.",
+    "CB-2025-0006 makes no hidden-condition or defect-free inference from visible appearance.",
+    "CB-2025-0008 distinguishes general policy from case-specific execution proof.",
+    "CB-2025-0009 uses deterministic NO-SHOW and deadline semantics.",
+    "CB-2025-0010 applies its policy-defined default disposition.",
+    "Recommendation and suggested analyst action remain separate.",
+    "Missing, ambiguous, conflicting, unsupported, and relevant-but-insufficient evidence remain visible.",
+    "Successful corrected results persist and reopen without a provider call.",
+    "Historical v3 policies and results remain reproducible.",
+    "The complete automated test suite passes."
+  ]
+}

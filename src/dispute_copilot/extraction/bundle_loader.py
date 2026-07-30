@@ -122,6 +122,8 @@ def load_evidence_bundle_with_repositories(
         run_id=run.run_id,
         selection_id=selection.selection_id,
         policy_id=selection.policy_id,
+        case_transaction_id=(
+            run.case_snapshot.transaction.transaction_id
+        ),
         evidence_files=tuple(evidence_files),
     )
-

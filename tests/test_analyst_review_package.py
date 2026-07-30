@@ -74,6 +74,17 @@ def database_path(tmp_path: Path) -> Path:
         connection.execute(
             "DELETE FROM analyst_review_packages"
         )
+        # The checked-in/demo database can legitimately advance after a
+        # human review. This fixture needs the pre-decision package-assembly
+        # state, so isolate only the temporary copy without rewriting the
+        # append-only decision in the real database.
+        connection.execute("DELETE FROM analyst_decisions")
+        connection.execute(
+            """
+            DELETE FROM workflow_events
+            WHERE source_type = 'ANALYST_DECISION'
+            """
+        )
     return destination
 
 

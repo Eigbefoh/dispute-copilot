@@ -12,7 +12,7 @@ from dispute_copilot.recommendation.mapping_models import (
 )
 
 DEFAULT_MAPPING_ROOT = Path("data/recommendation-mappings")
-SUPPORTED_MAPPING_SCHEMA_VERSION = "1.0.0"
+SUPPORTED_MAPPING_SCHEMA_VERSIONS = {"1.0.0", "2.0.0"}
 
 
 def load_recommendation_mapping(
@@ -55,7 +55,7 @@ def load_recommendation_mapping(
         )
     if (
         manifest.mapping_schema_version
-        != SUPPORTED_MAPPING_SCHEMA_VERSION
+        not in SUPPORTED_MAPPING_SCHEMA_VERSIONS
     ):
         raise MappingContractError(
             "Unsupported recommendation mapping schema version: "

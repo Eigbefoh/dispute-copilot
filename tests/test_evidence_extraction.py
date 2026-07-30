@@ -31,6 +31,7 @@ from dispute_copilot.extraction.evidence_extraction_models import (
     ExtractionResponse,
     TextExtractionEvidenceReference,
     VisualExtractionEvidenceReference,
+    extraction_response_model_for,
 )
 from dispute_copilot.extraction.openai_responses_adapter import (
     EXTRACTION_INSTRUCTIONS,
@@ -48,6 +49,12 @@ from dispute_copilot.extraction.models import (
     EvidencePage,
     ExtractionMethod,
 )
+from dispute_copilot.extraction.vision_models import (
+    VISION_PROMPT_VERSION,
+    VISION_SCHEMA_VERSION,
+    VisionObservationResult,
+    render_vision_observations,
+)
 from dispute_copilot.policy.fact_models import FactDefinition
 
 
@@ -55,7 +62,7 @@ class FakeResponses:
     def __init__(
         self,
         *,
-        parsed: ExtractionResponse | None = None,
+        parsed: object | None = None,
         output_text: str = "A sage armchair is visible.",
         error: Exception | None = None,
     ) -> None:
@@ -160,6 +167,7 @@ def documents(
             run_id=uuid4(),
             selection_id=uuid4(),
             policy_id="visa-13.3-test",
+            case_transaction_id="txn_scope_test",
             evidence_files=(text_file, image_file),
         ),
         (text_document, image_document),
@@ -269,12 +277,16 @@ def test_provider_receives_only_requested_evidence_facts_and_image(
     assert result == response.candidates
     assert len(responses.parse_calls) == 1
     call = responses.parse_calls[0]
-    assert call["text_format"] is ExtractionResponse
+    provider_model = call["text_format"]
+    assert provider_model.model_json_schema() == (
+        extraction_response_model_for(requested).model_json_schema()
+    )
     assert call["model"] == settings.model
     content = call["input"][0]["content"]
     assert any(item["type"] == "input_image" for item in content)
     prompt = content[0]["text"]
     assert "merchant_stated_product_description" in prompt
+    assert "txn_scope_test" in prompt
     assert '"canonical_text":' in prompt
     assert '"text":' not in prompt
 
@@ -308,6 +320,43 @@ def test_metadata_fact_is_never_sent_to_model(
         )
 
     assert responses.parse_calls == []
+
+
+def test_boolean_provider_schema_rejects_stringified_values() -> None:
+    requested = (
+        definition(
+            "merchant_recorded_first_transaction",
+            value_type="BOOLEAN",
+        ),
+    )
+    model = extraction_response_model_for(requested)
+    payload = {
+        "candidates": [
+            {
+                "fact_name": "merchant_recorded_first_transaction",
+                "status": "FOUND",
+                "values": [
+                    {
+                        "raw_value": "true",
+                        "references": [
+                            {
+                                "document_id": str(uuid4()),
+                                "file_name": "fraud-report.pdf",
+                                "page_number": 1,
+                                "evidence_type": "TEXT",
+                                "extraction_method": "NATIVE_TEXT",
+                                "supporting_text": "first transaction",
+                            }
+                        ],
+                    }
+                ],
+                "confidence": 0.9,
+            }
+        ]
+    }
+
+    with pytest.raises(ValidationError):
+        model.model_validate(payload)
 
 
 def test_model_failure_produces_typed_error(
@@ -493,20 +542,65 @@ def test_malformed_provider_response_fails_closed(
 def test_same_model_client_can_describe_image(tmp_path: Path) -> None:
     image_path = tmp_path / "photo.png"
     image_path.write_bytes(b"image")
-    responses = FakeResponses(output_text="A sage armchair is visible.")
+    observations = VisionObservationResult(
+        written_text_observations=(
+            "Carlton Armchair (Sage) — delivered 18 Apr 2025",
+        ),
+        visible_pixel_observations=(
+            "A front-facing sage armchair is visible.",
+        ),
+        limitations=(
+            "Only a front view is visible; hidden condition cannot be "
+            "established.",
+        ),
+    )
+    responses = FakeResponses(parsed=observations)
     provider = OpenAIResponsesVisionProvider(
         client=FakeClient(responses),
         settings=provider_settings(),
     )
 
     assert provider.describe_image(file_path=image_path) == (
-        "A sage armchair is visible."
+        render_vision_observations(observations)
     )
-    assert len(responses.create_calls) == 1
+    assert len(responses.parse_calls) == 1
+    call = responses.parse_calls[0]
+    assert call["text_format"] is VisionObservationResult
     identity = json.loads(provider.provider_version)
     assert identity["provider"] == "nebius"
     assert identity["model"] == "user-selected-nebius-model"
     assert identity["adapter"] == "openai_responses"
+    assert identity["prompt_version"] == VISION_PROMPT_VERSION
+    assert identity["schema_version"] == VISION_SCHEMA_VERSION
+    assert identity["parameters"]["structured_output"] == (
+        "pydantic_json_schema"
+    )
+
+
+def test_image_description_fails_closed_on_invalid_observations(
+    tmp_path: Path,
+) -> None:
+    image_path = tmp_path / "photo.png"
+    image_path.write_bytes(b"image")
+    responses = FakeResponses(
+        parsed={
+            "written_text_observations": [],
+            "visible_pixel_observations": [
+                "The chair is defect-free."
+            ],
+            "limitations": ["Only the front is visible."],
+        }
+    )
+    provider = OpenAIResponsesVisionProvider(
+        client=FakeClient(responses),
+        settings=provider_settings(),
+    )
+
+    with pytest.raises(
+        InvalidProviderResponseError,
+        match="hidden condition",
+    ):
+        provider.describe_image(file_path=image_path)
 
 
 def test_untrusted_schema_has_no_evaluation_fields() -> None:

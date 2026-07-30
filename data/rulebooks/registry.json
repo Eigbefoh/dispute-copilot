@@ -1,0 +1,14 @@
+{
+  "registry_schema_version": "rulebook-registry/1.0.0",
+  "bundles": [
+    {
+      "rulebook_version": "take-home-v3",
+      "lifecycle_status": "SUPERSEDED_FOR_POLICY_FIDELITY",
+      "superseded_by": "take-home-v4",
+      "historical_lineage_readable": true,
+      "pipeline_validation_allowed": true,
+      "production_policy_recommendation_allowed": false,
+      "reason": "Preserved as an immutable pipeline and lineage baseline. The v3 predicate bundle contains audited policy-semantic limitations and must not be used to claim production policy fidelity."
+    }
+  ]
+}

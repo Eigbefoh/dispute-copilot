@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 from math import isfinite
-from typing import Annotated, Literal, TypeAlias
+from functools import reduce
+from operator import or_
+from typing import Annotated, Any, Literal, TypeAlias
 from uuid import UUID
 
 from pydantic import (
@@ -13,9 +15,12 @@ from pydantic import (
     StrictBool,
     StrictInt,
     StrictStr,
+    create_model,
     field_validator,
     model_validator,
 )
+
+from dispute_copilot.policy.fact_models import FactDefinition
 
 CandidateRawValue = StrictStr | StrictInt | StrictBool
 
@@ -146,3 +151,63 @@ class ExtractionResponse(UntrustedExtractionModel):
     """Complete structured response returned by the extraction model."""
 
     candidates: tuple[ExtractionCandidate, ...]
+
+
+def extraction_response_model_for(
+    requested_facts: tuple[FactDefinition, ...],
+) -> type[BaseModel]:
+    """Build a provider schema whose raw values match catalogue types.
+
+    The returned model constrains provider generation only. Provider output
+    is still parsed through ``ExtractionResponse`` and then through the
+    deterministic catalogue-aware adapter before admission.
+    """
+    if not requested_facts:
+        return ExtractionResponse
+
+    raw_types: dict[str, Any] = {
+        "STRING": StrictStr,
+        "ADDRESS": StrictStr,
+        "DATE": StrictStr,
+        "DATETIME": StrictStr,
+        "DECIMAL": StrictStr,
+        "INTEGER": StrictInt,
+        "BOOLEAN": StrictBool,
+    }
+    candidate_models: list[type[BaseModel]] = []
+    for index, definition in enumerate(requested_facts):
+        raw_type = raw_types[definition.value_type]
+        value_model = create_model(
+            f"RequestedValue{index}",
+            __base__=UntrustedExtractionModel,
+            raw_value=(raw_type, ...),
+            references=(
+                tuple[ExtractionEvidenceReference, ...],
+                Field(min_length=1),
+            ),
+        )
+        fact_literal = Literal[definition.fact_name]
+        candidate_model = create_model(
+            f"RequestedCandidate{index}",
+            __base__=UntrustedExtractionModel,
+            fact_name=(fact_literal, ...),
+            status=(
+                Literal[
+                    "FOUND",
+                    "NOT_FOUND",
+                    "AMBIGUOUS",
+                    "CONFLICTING",
+                ],
+                ...,
+            ),
+            values=(tuple[value_model, ...], ...),
+            confidence=(float | None, Field(default=None, ge=0, le=1)),
+        )
+        candidate_models.append(candidate_model)
+
+    candidate_union = reduce(or_, candidate_models)
+    return create_model(
+        "RequestedExtractionResponse",
+        __base__=UntrustedExtractionModel,
+        candidates=(tuple[candidate_union, ...], ...),
+    )

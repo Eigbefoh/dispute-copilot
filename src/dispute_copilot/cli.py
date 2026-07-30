@@ -17,6 +17,7 @@ from dispute_copilot.orchestration.service import create_case_run
 from dispute_copilot.policy.repository import (
     DuplicatePolicySelectionError,
 )
+from dispute_copilot.policy.constants import DEFAULT_RULEBOOK_VERSION
 from dispute_copilot.policy.selection_service import (
     CaseRunNotFoundError,
     CaseRunNotReadyForPolicySelectionError,
@@ -54,10 +55,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--rulebook-version",
-        default="take-home-v1",
+        default=DEFAULT_RULEBOOK_VERSION,
         help=(
             "Exact rulebook version for select-policy "
-            "(default: take-home-v1)."
+            f"(default: {DEFAULT_RULEBOOK_VERSION})."
         ),
     )
     parser.add_argument(

@@ -6,13 +6,17 @@ from dataclasses import dataclass
 from typing import Any, Callable
 
 from dispute_copilot.config import (
+    DEFAULT_ANTHROPIC_BASE_URL,
     DEFAULT_NEBIUS_BASE_URL,
+    DEFAULT_OPENAI_BASE_URL,
     ModelProviderSettings,
 )
-from dispute_copilot.extraction.errors import (
-    ProviderConfigurationError,
-    UnsupportedProviderError,
+from dispute_copilot.extraction.anthropic_messages_adapter import (
+    AnthropicMessagesEvidenceExtractor,
+    AnthropicMessagesVisionProvider,
+    create_anthropic_messages_client,
 )
+from dispute_copilot.extraction.errors import UnsupportedProviderError
 from dispute_copilot.extraction.evidence_extractor import (
     EvidenceCandidateExtractor,
 )
@@ -79,19 +83,22 @@ def create_nebius_runtime(
     )
 
 
-def create_openai_compatible_runtime(
+def create_openai_runtime(
     settings: ModelProviderSettings,
     client_factory: Callable[..., Any] | None = None,
     diagnostics: ProviderResponseDiagnostics | None = None,
 ) -> ExtractionRuntime:
-    """Compose an explicitly configured compatible endpoint."""
+    """Compose the native OpenAI Responses runtime."""
+    effective_settings = settings
     if settings.base_url is None:
-        raise ProviderConfigurationError(
-            "Provider 'openai_compatible' requires MODEL_BASE_URL. No "
-            "default endpoint is selected."
+        effective_settings = ModelProviderSettings(
+            provider=settings.provider,
+            model=settings.model,
+            api_key=settings.api_key,
+            base_url=DEFAULT_OPENAI_BASE_URL,
         )
     return _create_openai_responses_runtime(
-        settings,
+        effective_settings,
         client_factory,
         diagnostics,
     )
@@ -119,9 +126,41 @@ def _create_openai_responses_runtime(
     )
 
 
+def create_anthropic_runtime(
+    settings: ModelProviderSettings,
+    client_factory: Callable[..., Any] | None = None,
+    diagnostics: ProviderResponseDiagnostics | None = None,
+) -> ExtractionRuntime:
+    """Compose the native Anthropic Messages runtime."""
+    effective_settings = settings
+    if settings.base_url is None:
+        effective_settings = ModelProviderSettings(
+            provider=settings.provider,
+            model=settings.model,
+            api_key=settings.api_key,
+            base_url=DEFAULT_ANTHROPIC_BASE_URL,
+        )
+    client = create_anthropic_messages_client(
+        effective_settings,
+        client_factory=client_factory,
+    )
+    return ExtractionRuntime(
+        extractor=AnthropicMessagesEvidenceExtractor(
+            client=client,
+            settings=effective_settings,
+            diagnostics=diagnostics,
+        ),
+        vision_provider=AnthropicMessagesVisionProvider(
+            client=client,
+            settings=effective_settings,
+        ),
+    )
+
+
 PROVIDER_FACTORIES: dict[str, RuntimeFactory] = {
     "nebius": create_nebius_runtime,
-    "openai_compatible": create_openai_compatible_runtime,
+    "openai": create_openai_runtime,
+    "anthropic": create_anthropic_runtime,
 }
 
 

@@ -12,6 +12,8 @@ from dispute_copilot.recommendation.mapping_models import Recommendation
 
 PLACEHOLDER_PATTERN = re.compile(r"\{([a-z][a-z0-9_]*)\}")
 ALLOWED_PLACEHOLDERS = {
+    "aggregation_summary",
+    "causal_requirement_verb",
     "policy_display_name",
     "satisfied_requirement_summary",
     "causal_requirement_list",

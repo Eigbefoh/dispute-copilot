@@ -1,0 +1,71 @@
+{
+  "policy_id": "visa-13.2-take-home-v4",
+  "scheme": "visa",
+  "reason_code": "13.2",
+  "rulebook_version": "take-home-v4",
+  "requirements": [
+    {
+      "requirement_id": "V13.2-R1",
+      "description": "Recurring billing terms and cancellation method",
+      "required_facts": [
+        "merchant_stated_recurring_billing_terms",
+        "merchant_stated_cancellation_method"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v4",
+        "page": 2,
+        "start_line_id": "P002-L021",
+        "end_line_id": "P002-L021",
+        "exact_quote": "1. Terms of service disclosing the recurring billing arrangement and the cancellation method"
+      }
+    },
+    {
+      "requirement_id": "V13.2-R2",
+      "description": "Advance notification of the upcoming charge",
+      "required_facts": [
+        "merchant_reported_notification_content",
+        "merchant_reported_notification_date",
+        "merchant_reported_notification_channel",
+        "transaction_date"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v4",
+        "page": 2,
+        "start_line_id": "P002-L022",
+        "end_line_id": "P002-L022",
+        "exact_quote": "2. Evidence the cardholder was notified of the upcoming charge (typically 7+ days in advance) for transactions over a defined threshold"
+      }
+    },
+    {
+      "requirement_id": "V13.2-R3",
+      "description": "No cancellation request before billing",
+      "required_facts": [
+        "merchant_reported_cancellation_search_scope",
+        "merchant_reported_cancellation_request_count",
+        "transaction_date"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v4",
+        "page": 3,
+        "start_line_id": "P003-L001",
+        "end_line_id": "P003-L001",
+        "exact_quote": "3. No record of the cardholder having submitted a cancellation request prior to the billing date"
+      }
+    },
+    {
+      "requirement_id": "V13.2-R4",
+      "description": "Original opt-in to recurring billing",
+      "required_facts": [
+        "merchant_recorded_recurring_opt_in_date",
+        "merchant_recorded_recurring_opt_in_method"
+      ],
+      "source_citation": {
+        "document_id": "reason-codes-take-home-v4",
+        "page": 3,
+        "start_line_id": "P003-L002",
+        "end_line_id": "P003-L002",
+        "exact_quote": "4. Evidence of the cardholder's original opt-in to the recurring arrangement"
+      }
+    }
+  ]
+}

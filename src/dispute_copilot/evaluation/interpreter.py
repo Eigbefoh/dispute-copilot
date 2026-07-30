@@ -5,6 +5,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from datetime import date, datetime
 from decimal import Decimal
+import re
+import unicodedata
 
 from dispute_copilot.evaluation.errors import PredicateExecutionError
 from dispute_copilot.evaluation.models import FactBinding, TruthValue
@@ -36,7 +38,115 @@ class PredicateInterpreter:
             return self._evaluate_all_of(predicate, facts)
         if predicate.operator is PredicateOperator.ANY_OF:
             return self._evaluate_any_of(predicate, facts)
+        if predicate.operator is PredicateOperator.NOT:
+            return self._evaluate_not(predicate, facts)
+        if (
+            predicate.operator
+            is PredicateOperator.UNRESOLVED_POLICY_CONDITION
+        ):
+            assert predicate.basis_code is not None
+            return PredicateOutcome(
+                result=TruthValue.UNKNOWN,
+                basis_codes=(predicate.basis_code,),
+                bindings=(),
+                unresolved_facts=(),
+            )
+        if (
+            predicate.operator
+            is PredicateOperator.HOURS_BEFORE_LESS_THAN
+        ):
+            return self._evaluate_hours_before_less_than(
+                predicate,
+                facts,
+            )
         return self._evaluate_leaf(predicate, facts)
+
+    def _evaluate_hours_before_less_than(
+        self,
+        predicate: PredicateNode,
+        facts: dict[str, ResolvedFact],
+    ) -> PredicateOutcome:
+        assert predicate.fact_name is not None
+        assert predicate.other_fact_name is not None
+        assert predicate.numeric_bound_fact_name is not None
+        names = (
+            predicate.fact_name,
+            predicate.other_fact_name,
+            predicate.numeric_bound_fact_name,
+        )
+        resolved = []
+        unresolved = []
+        for name in names:
+            fact = facts.get(name)
+            if fact is None:
+                raise PredicateExecutionError(
+                    f"predicate references unavailable fact '{name}'"
+                )
+            resolved.append(fact)
+            outcome = _unresolved_outcome(fact, _binding(fact))
+            if outcome is not None:
+                unresolved.append(outcome)
+        if unresolved:
+            return _combine(
+                tuple(
+                    (
+                        _leaf_outcome(
+                            TruthValue.TRUE,
+                            (_binding(fact),),
+                        )
+                        if _unresolved_outcome(
+                            fact,
+                            _binding(fact),
+                        )
+                        is None
+                        else _unresolved_outcome(
+                            fact,
+                            _binding(fact),
+                        )
+                    )
+                    for fact in resolved
+                ),
+                result=TruthValue.UNKNOWN,
+                primary_code="LATE_CANCELLATION_OPERAND_NOT_ESTABLISHED",
+            )
+        cancellations, services, windows = (
+            tuple(value.value for value in fact.resolved_values)
+            for fact in resolved
+        )
+        comparisons = tuple(
+            _hours_before_less_than(cancellation, service, window)
+            for cancellation in cancellations
+            for service in services
+            for window in windows
+        )
+        result = _match_bools(comparisons, predicate.value_match)
+        return _leaf_outcome(
+            result,
+            tuple(_binding(fact) for fact in resolved),
+        )
+
+    def _evaluate_not(
+        self,
+        predicate: PredicateNode,
+        facts: dict[str, ResolvedFact],
+    ) -> PredicateOutcome:
+        child = self.evaluate(predicate.predicates[0], facts)
+        result = {
+            TruthValue.TRUE: TruthValue.FALSE,
+            TruthValue.FALSE: TruthValue.TRUE,
+            TruthValue.UNKNOWN: TruthValue.UNKNOWN,
+        }[child.result]
+        return _combine(
+            (child,),
+            result=result,
+            primary_code=(
+                "PREDICATE_TRUE"
+                if result is TruthValue.TRUE
+                else "PREDICATE_FALSE"
+                if result is TruthValue.FALSE
+                else "NEGATED_PREDICATE_NOT_ESTABLISHED"
+            ),
+        )
 
     def _evaluate_all_of(
         self,
@@ -163,6 +273,51 @@ class PredicateInterpreter:
                 ),
                 predicate.value_match,
             )
+        elif predicate.operator is PredicateOperator.NORMALIZED_STRING_EQUALS:
+            right_values = (
+                tuple(item.value for item in other.resolved_values)
+                if other is not None
+                else (predicate.expected_value,)
+            )
+            result = _compare_pairs(
+                left_values,
+                right_values,
+                predicate.value_match,
+                _normalized_string_equals,
+            )
+        elif predicate.operator is PredicateOperator.NORMALIZED_STRING_IN:
+            expected = predicate.expected_values
+            result = _match_bools(
+                tuple(
+                    any(
+                        _normalized_string_equals(value, candidate)
+                        for candidate in expected
+                    )
+                    for value in left_values
+                ),
+                predicate.value_match,
+            )
+        elif predicate.operator is PredicateOperator.MATERIAL_ADDRESS_MATCH:
+            assert other is not None
+            right_values = tuple(
+                item.value for item in other.resolved_values
+            )
+            result = _compare_pairs(
+                left_values,
+                right_values,
+                predicate.value_match,
+                _material_address_matches,
+            )
+            if (
+                result is TruthValue.FALSE
+                and predicate.mismatch_result.value == "UNKNOWN"
+            ):
+                return PredicateOutcome(
+                    result=TruthValue.UNKNOWN,
+                    basis_codes=("MATERIAL_ADDRESS_ATTRIBUTION_CONFLICT",),
+                    bindings=clean_bindings,
+                    unresolved_facts=(),
+                )
         elif predicate.operator in {
             PredicateOperator.DATE_ON_OR_BEFORE,
             PredicateOperator.DATE_ON_OR_AFTER,
@@ -435,3 +590,76 @@ def _numeric_compare(
         )
     numeric = Decimal(value)
     return numeric >= bound if at_least else numeric <= bound
+
+
+def _normalized_string_equals(left: object, right: object) -> bool:
+    if not isinstance(left, str) or not isinstance(right, str):
+        raise PredicateExecutionError(
+            "normalized string predicate received a non-string value"
+        )
+    return _normalize_controlled_string(left) == _normalize_controlled_string(
+        right
+    )
+
+
+def _normalize_controlled_string(value: str) -> str:
+    return unicodedata.normalize("NFKC", value).strip().casefold()
+
+
+def _hours_before_less_than(
+    earlier: object,
+    later: object,
+    maximum_hours: object,
+) -> bool:
+    if not isinstance(earlier, datetime) or not isinstance(later, datetime):
+        raise PredicateExecutionError(
+            "hours_before_less_than received a non-DATETIME value"
+        )
+    if (
+        earlier.tzinfo is None
+        or earlier.utcoffset() is None
+        or later.tzinfo is None
+        or later.utcoffset() is None
+    ):
+        raise PredicateExecutionError(
+            "hours_before_less_than requires timezone-aware values"
+        )
+    if type(maximum_hours) not in {int, Decimal}:
+        raise PredicateExecutionError(
+            "hours_before_less_than received a non-numeric window"
+        )
+    bound = Decimal(maximum_hours)
+    if bound < 0:
+        raise PredicateExecutionError(
+            "hours_before_less_than requires a non-negative window"
+        )
+    elapsed_seconds = Decimal(str((later - earlier).total_seconds()))
+    if elapsed_seconds < 0:
+        raise PredicateExecutionError(
+            "hours_before_less_than received reversed datetimes"
+        )
+    return elapsed_seconds / Decimal(3600) < bound
+
+
+def _material_address_matches(left: object, right: object) -> bool:
+    """Compare only normalized source strings; never infer components."""
+    if not isinstance(left, str) or not isinstance(right, str):
+        raise PredicateExecutionError(
+            "material_address_match received a non-string value"
+        )
+    normalized_left = _normalize_address(left)
+    normalized_right = _normalize_address(right)
+    if not normalized_left or not normalized_right:
+        raise PredicateExecutionError(
+            "material_address_match received an empty normalized value"
+        )
+    return (
+        normalized_left == normalized_right
+        or normalized_left in normalized_right
+        or normalized_right in normalized_left
+    )
+
+
+def _normalize_address(value: str) -> str:
+    normalized = unicodedata.normalize("NFKC", value).casefold()
+    return re.sub(r"[^a-z0-9]", "", normalized)

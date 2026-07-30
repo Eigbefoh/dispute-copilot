@@ -181,6 +181,9 @@ def test_loads_ordered_bundle_from_persisted_snapshots(
     assert bundle.run_id == run.run_id
     assert bundle.selection_id == selection.selection_id
     assert bundle.policy_id == selection.policy_id
+    assert bundle.case_transaction_id == (
+        run.case_snapshot.transaction.transaction_id
+    )
     assert [
         evidence_file.file_name
         for evidence_file in bundle.evidence_files

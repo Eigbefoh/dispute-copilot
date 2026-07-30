@@ -37,6 +37,15 @@ Status rules:
 - CONFLICTING: the evidence supports at least two distinct competing
   values.
 
+Value serialization rules:
+- STRING and ADDRESS: non-blank JSON strings.
+- DATE: JSON string in YYYY-MM-DD format.
+- DATETIME: timezone-aware ISO-8601 JSON string.
+- DECIMAL: canonical numeric JSON string, never a JSON number.
+- INTEGER: JSON integer, never a quoted string.
+- BOOLEAN: JSON true or false, never "true", "false", "yes", "no", 1, or 0.
+- Do not coerce, repair, or guess a value that is not explicitly supported.
+
 Evidence rules:
 - Answer only the requested facts.
 - Every value must reference a supplied document ID, file name, and page.
@@ -61,6 +70,9 @@ Evidence rules:
   separate references. Never put both channel fields in one reference.
 - Treat merchant and carrier text as source assertions, not proven truth.
 - Do not add facts noticed incidentally.
+- When a case transaction ID is supplied and a document contains multiple
+  records, extract only values tied to that transaction ID. Do not borrow
+  values from adjacent or similar records.
 
 The following examples show shape only. Always use the actual supplied
 document ID, filename, page, and exact source content.
@@ -137,6 +149,8 @@ def raise_provider_invocation_error(
         "json_schema",
         "structured output",
         "structured_output",
+        "output_config",
+        "json output",
         "text_format",
         "text.format",
         "input_image",
@@ -169,6 +183,7 @@ def provider_prefix(settings: ModelProviderSettings) -> str:
 def build_extraction_request(
     *,
     requested_facts: tuple[FactDefinition, ...],
+    evidence_bundle: EvidenceBundle,
     evidence_documents: tuple[EvidenceDocument, ...],
 ) -> str:
     facts = [
@@ -176,6 +191,9 @@ def build_extraction_request(
             "fact_name": definition.fact_name,
             "description": definition.description,
             "value_type": definition.value_type,
+            "raw_value_encoding": _raw_value_encoding(
+                definition.value_type
+            ),
             "source_type": definition.source_type,
             "cardinality": definition.cardinality,
         }
@@ -198,11 +216,26 @@ def build_extraction_request(
         for document in evidence_documents
     ]
     return (
+        "Deterministic case scope:\n"
+        f"{json.dumps({'transaction_id': evidence_bundle.case_transaction_id}, indent=2)}\n\n"
         "Requested facts, in required response order:\n"
         f"{json.dumps(facts, indent=2)}\n\n"
         "Converted evidence documents:\n"
         f"{json.dumps(documents, indent=2)}"
     )
+
+
+def _raw_value_encoding(value_type: str) -> str:
+    encodings = {
+        "STRING": "non-blank JSON string",
+        "ADDRESS": "non-blank JSON string",
+        "DATE": "YYYY-MM-DD JSON string",
+        "DATETIME": "timezone-aware ISO-8601 JSON string",
+        "DECIMAL": "canonical numeric JSON string",
+        "INTEGER": "JSON integer, not a string",
+        "BOOLEAN": "JSON true or false, not a string or number",
+    }
+    return encodings[value_type]
 
 
 def validate_bundle_documents(

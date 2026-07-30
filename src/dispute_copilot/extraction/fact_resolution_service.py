@@ -232,6 +232,7 @@ def _resolve_metadata_facts(
                 resolved_values=(
                     ResolvedValue(
                         value=raw_fact.value,
+                        value_type=definition.value_type,
                         provenance=(
                             CaseMetadataProvenance(
                                 source_type="CASE_METADATA",

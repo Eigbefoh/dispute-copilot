@@ -164,6 +164,7 @@ def _adapt_values(
         resolved.append(
             ResolvedValue(
                 value=value,
+                value_type=definition.value_type,
                 provenance=provenance,
             )
         )

@@ -53,6 +53,17 @@ class RecommendationDisplay(StrictFrozenModel):
     advisory_only: Literal[True]
 
 
+class AggregationDisplay(StrictFrozenModel):
+    mode: Literal["ALL_APPLICABLE", "ANY_TWO"]
+    satisfied_count: int = Field(ge=0)
+    not_satisfied_count: int = Field(ge=0)
+    unresolved_count: int = Field(ge=0)
+    not_applicable_count: int = Field(ge=0)
+    applicable_count: int = Field(ge=0)
+    minimum_required: int = Field(ge=1)
+    maximum_possible_satisfied: int = Field(ge=0)
+
+
 class DeterministicRationale(StrictFrozenModel):
     template_key: str = Field(min_length=1)
     template_version: str = Field(min_length=1)
@@ -179,6 +190,7 @@ class AnalystReviewPackage(StrictFrozenModel):
     presentation_rules_version: str = Field(min_length=1)
     case_summary: CaseSummary
     recommendation: RecommendationDisplay
+    aggregation: AggregationDisplay | None = None
     rationale: DeterministicRationale
     requirement_checklist: tuple[RequirementChecklistItem, ...] = Field(
         min_length=1
@@ -232,6 +244,8 @@ def calculate_review_package_content_hash(
         mode="json",
         exclude={"review_package_id", "created_at", "content_hash"},
     )
+    if payload.get("aggregation") is None:
+        payload.pop("aggregation", None)
     canonical = json.dumps(
         payload,
         sort_keys=True,

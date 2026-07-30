@@ -9,7 +9,9 @@ from uuid import uuid4
 import pytest
 
 from dispute_copilot.config import (
+    DEFAULT_ANTHROPIC_BASE_URL,
     DEFAULT_NEBIUS_BASE_URL,
+    DEFAULT_OPENAI_BASE_URL,
     ModelProviderSettings,
     load_model_provider_settings,
 )
@@ -17,6 +19,10 @@ from dispute_copilot.extraction import resolve_facts
 from dispute_copilot.extraction.errors import (
     ProviderConfigurationError,
     UnsupportedProviderError,
+)
+from dispute_copilot.extraction.anthropic_messages_adapter import (
+    AnthropicMessagesEvidenceExtractor,
+    AnthropicMessagesVisionProvider,
 )
 from dispute_copilot.extraction.openai_chat_completions_adapter import (
     OpenAIChatCompletionsEvidenceExtractor,
@@ -26,6 +32,7 @@ from dispute_copilot.extraction.openai_responses_adapter import (
     OpenAIResponsesVisionProvider,
 )
 from dispute_copilot.extraction.provider_runtime import (
+    PROVIDER_FACTORIES,
     create_extraction_runtime,
 )
 from dispute_copilot.extraction.provider_response_diagnostics import (
@@ -128,7 +135,7 @@ def test_invalid_provider_base_url_fails_closed(
     ):
         load_model_provider_settings(
             {
-                "MODEL_PROVIDER": "openai_compatible",
+                "MODEL_PROVIDER": "openai",
                 "MODEL_NAME": "user/chosen-model-id",
                 "MODEL_API_KEY": "test-only-token",
                 "MODEL_BASE_URL": base_url,
@@ -178,23 +185,30 @@ def test_generic_and_legacy_settings_cannot_be_mixed() -> None:
         )
 
 
-def test_openai_compatible_requires_explicit_endpoint() -> None:
+def test_openai_runtime_uses_official_default_endpoint() -> None:
     settings = ModelProviderSettings(
-        provider="openai_compatible",
+        provider="openai",
         model="user/chosen-model-id",
         api_key="test-only-token",
     )
+    received: dict[str, str] = {}
 
-    with pytest.raises(
-        ProviderConfigurationError,
-        match="requires MODEL_BASE_URL",
-    ):
-        create_extraction_runtime(settings)
+    def fake_factory(**kwargs: str) -> object:
+        received.update(kwargs)
+        return object()
+
+    runtime = create_extraction_runtime(
+        settings,
+        client_factory=fake_factory,
+    )
+
+    assert received["base_url"] == DEFAULT_OPENAI_BASE_URL
+    assert runtime.extractor.settings.provider == "openai"
 
 
-def test_openai_compatible_runtime_preserves_endpoint_and_model() -> None:
+def test_openai_runtime_preserves_explicit_endpoint_and_model() -> None:
     settings = ModelProviderSettings(
-        provider="openai_compatible",
+        provider="openai",
         model="user/chosen-model-id",
         api_key="test-only-token",
         base_url="https://models.example.test/v1/",
@@ -212,12 +226,10 @@ def test_openai_compatible_runtime_preserves_endpoint_and_model() -> None:
 
     assert received["base_url"] == "https://models.example.test/v1/"
     assert runtime.extractor.settings.model == "user/chosen-model-id"
-    assert runtime.extractor.execution_identity.provider == (
-        "openai_compatible"
-    )
+    assert runtime.extractor.execution_identity.provider == "openai"
 
 
-def test_registered_routes_use_explicit_compatible_adapters() -> None:
+def test_registered_routes_use_exact_native_adapters() -> None:
     def fake_factory(**_: str) -> object:
         return object()
 
@@ -229,12 +241,19 @@ def test_registered_routes_use_explicit_compatible_adapters() -> None:
         ),
         client_factory=fake_factory,
     )
-    compatible_runtime = create_extraction_runtime(
+    openai_runtime = create_extraction_runtime(
         ModelProviderSettings(
-            provider="openai_compatible",
-            model="compatible-model",
+            provider="openai",
+            model="openai-model",
             api_key="test-token",
-            base_url="https://models.example.test/v1/",
+        ),
+        client_factory=fake_factory,
+    )
+    anthropic_runtime = create_extraction_runtime(
+        ModelProviderSettings(
+            provider="anthropic",
+            model="anthropic-model",
+            api_key="test-token",
         ),
         client_factory=fake_factory,
     )
@@ -248,30 +267,70 @@ def test_registered_routes_use_explicit_compatible_adapters() -> None:
         OpenAIResponsesVisionProvider,
     )
     assert isinstance(
-        compatible_runtime.extractor,
+        openai_runtime.extractor,
         OpenAIResponsesEvidenceExtractor,
     )
     assert isinstance(
-        compatible_runtime.vision_provider,
+        openai_runtime.vision_provider,
         OpenAIResponsesVisionProvider,
+    )
+    assert isinstance(
+        anthropic_runtime.extractor,
+        AnthropicMessagesEvidenceExtractor,
+    )
+    assert isinstance(
+        anthropic_runtime.vision_provider,
+        AnthropicMessagesVisionProvider,
     )
     nebius_identity = json.loads(
         nebius_runtime.extractor.execution_identity.canonical_json()
     )
-    compatible_identity = json.loads(
-        compatible_runtime.extractor.execution_identity.canonical_json()
+    openai_identity = json.loads(
+        openai_runtime.extractor.execution_identity.canonical_json()
+    )
+    anthropic_identity = json.loads(
+        anthropic_runtime.extractor.execution_identity.canonical_json()
     )
     assert nebius_identity["provider"] == "nebius"
     assert nebius_identity["model"] == "nebius-model"
-    assert compatible_identity["provider"] == "openai_compatible"
-    assert compatible_identity["model"] == "compatible-model"
+    assert openai_identity["provider"] == "openai"
+    assert openai_identity["model"] == "openai-model"
+    assert anthropic_identity["provider"] == "anthropic"
+    assert anthropic_identity["model"] == "anthropic-model"
     assert nebius_identity["adapter"] == "openai_chat_completions"
-    assert compatible_identity["adapter"] == "openai_responses"
+    assert openai_identity["adapter"] == "openai_responses"
+    assert anthropic_identity["adapter"] == "anthropic_messages"
     for field in ("prompt_version", "schema_version"):
-        assert nebius_identity[field] == compatible_identity[field]
+        assert nebius_identity[field] == openai_identity[field]
+        assert nebius_identity[field] == anthropic_identity[field]
     assert "test-token" not in json.dumps(
-        (nebius_identity, compatible_identity)
+        (nebius_identity, openai_identity, anthropic_identity)
     )
+    assert set(PROVIDER_FACTORIES) == {
+        "nebius",
+        "openai",
+        "anthropic",
+    }
+
+
+def test_anthropic_runtime_uses_official_default_endpoint() -> None:
+    received: dict[str, str] = {}
+
+    def fake_factory(**kwargs: str) -> object:
+        received.update(kwargs)
+        return object()
+
+    runtime = create_extraction_runtime(
+        ModelProviderSettings(
+            provider="anthropic",
+            model="anthropic-model",
+            api_key="test-token",
+        ),
+        client_factory=fake_factory,
+    )
+
+    assert received["base_url"] == DEFAULT_ANTHROPIC_BASE_URL
+    assert runtime.extractor.settings.provider == "anthropic"
 
 
 def test_debug_diagnostics_are_explicitly_injected() -> None:
@@ -305,7 +364,7 @@ def test_cli_debug_provider_response_flag_is_opt_in() -> None:
 
 def test_unknown_provider_fails_before_transport_creation() -> None:
     settings = ModelProviderSettings(
-        provider="anthropic",
+        provider="unsupported",
         model="user/chosen-model-id",
         api_key="test-only-token",
     )
@@ -318,7 +377,7 @@ def test_unknown_provider_fails_before_transport_creation() -> None:
 
     with pytest.raises(
         UnsupportedProviderError,
-        match="Unsupported model provider 'anthropic'",
+        match="Unsupported model provider 'unsupported'",
     ):
         create_extraction_runtime(
             settings,
@@ -326,6 +385,21 @@ def test_unknown_provider_fails_before_transport_creation() -> None:
         )
 
     assert transport_called is False
+
+
+def test_generic_configuration_rejects_removed_compatible_route() -> None:
+    with pytest.raises(
+        UnsupportedProviderError,
+        match="openai_compatible",
+    ):
+        load_model_provider_settings(
+            {
+                "MODEL_PROVIDER": "openai_compatible",
+                "MODEL_NAME": "user/chosen-model-id",
+                "MODEL_API_KEY": "test-only-token",
+                "MODEL_BASE_URL": "https://models.example.test/v1/",
+            }
+        )
 
 
 def test_cli_missing_configuration_stops_before_resolution(

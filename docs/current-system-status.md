@@ -1,6 +1,6 @@
 # Dispute Copilot — Current System Status
 
-Last updated: 29 July 2026
+Last updated: 30 July 2026
 
 ## Executive status
 
@@ -24,11 +24,22 @@ Case intake
 → READY_FOR_ANALYST_REVIEW
 ```
 
-The production extraction branch is provider-pluggable. `nebius` and
-`openai_compatible` are explicitly registered. Nebius evidence extraction uses
-Chat Completions JSON-schema mode; its image-description conversion continues
-to use Responses. Generic `openai_compatible` extraction uses Responses. The
-`openai` Python package remains installed only as the transport client.
+The production extraction branch is provider-pluggable. Exactly `nebius`,
+`openai`, and `anthropic` are registered. Nebius evidence extraction preserves
+its tested Chat Completions JSON-schema route. OpenAI uses native Responses,
+and Anthropic uses native Messages with `output_config.format`. All three
+share one canonical candidate schema, deterministic admission boundary, and
+structured image-observation contract. OpenAI and Anthropic are implemented
+and contract-tested; they are not represented as live validated until their
+separate three-case qualification packs succeed.
+
+Current qualification status for the amended three-provider contract:
+
+- Nebius: `IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED` for the new
+  three-case qualification standard; earlier persisted Nebius results remain
+  valid historical executions.
+- OpenAI: `IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED`.
+- Anthropic: `IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED`.
 
 The first live CB-2025-0006 attempt completed and cached the Nebius image
 description, then failed because Nebius rejected Responses JSON-schema
@@ -142,13 +153,18 @@ rulebook_version + scheme + reason_code
 ### 10. Provider-pluggable live extraction
 
 - Live inference is composed through an explicit provider registry.
-- Registered providers are `nebius` and `openai_compatible`.
+- Registered providers are exactly `nebius`, `openai`, and `anthropic`.
 - Nebius evidence extraction uses `OpenAIChatCompletions` with an explicit
   strict JSON schema.
-- Nebius image description retains the working `OpenAIResponses` adapter so
-  the successful conversion cache remains reusable.
-- Generic `openai_compatible` extraction uses `OpenAIResponses`.
-- The OpenAI SDK is transport only.
+- OpenAI uses the native Responses adapter.
+- Anthropic uses the native Messages adapter, exact
+  `output_config.format` JSON Schema, and base64 image blocks.
+- New image conversions from every provider require separate
+  `written_text_observations`, `visible_pixel_observations`, and
+  `limitations`.
+- The validated image structure is rendered deterministically under a new
+  provider/converter cache identity. Historical converted documents and
+  persisted results are not rewritten.
 - Central frozen `ModelProviderSettings` validates configuration before
   evidence is read or encoded.
 - Required settings:
@@ -166,7 +182,8 @@ MODEL_BASE_URL
 https://api.tokenfactory.nebius.com/v1/
 ```
 
-- `openai_compatible` requires an explicit `MODEL_BASE_URL`.
+- Nebius, OpenAI, and Anthropic each have a registered default base URL.
+- A supplied `MODEL_BASE_URL` must be a credential-free HTTP(S) URL.
 - There is no default model.
 - Provider and model selection belong exclusively to the user.
 - There is no model substitution, provider fallback, or OpenAI endpoint
@@ -180,6 +197,11 @@ https://api.tokenfactory.nebius.com/v1/
   provider, exact model, adapter, prompt, schema, and material parameters.
 - The SDK request-shape test confirms Nebius receives `schema`, never the
   incompatible `schema_` alias.
+- Native SDK request-shape tests confirm OpenAI and Anthropic receive the
+  canonical JSON Schema without an adapter-specific domain model.
+- Different live models may return different valid wording or candidate
+  values. The invariant is identical evidence scope, instructions, canonical
+  result structure, and deterministic treatment.
 
 ### 11. Fail-closed provider-response diagnostics
 
@@ -377,7 +399,7 @@ All ten are evidence facts. The current Visa 13.3 policy requests no
 Latest full test result:
 
 ```text
-237 passed
+345 passed
 1 skipped
 ```
 
@@ -400,9 +422,16 @@ Additional verification:
 - Missing model-provider configuration stops before evidence resolution.
 - Unsupported providers stop before transport creation.
 - The CLI has no provider-specific imports or construction.
-- Neither registered provider route substitutes a provider or model.
-- The real OpenAI SDK is exercised through a local mock transport to verify
-  the exact Nebius Chat Completions JSON-schema request body.
+- None of the three registered provider routes substitutes a provider or
+  model.
+- Native SDKs are exercised through local mock transports to verify the exact
+  Nebius Chat Completions, OpenAI Responses, and Anthropic Messages
+  structured-output request bodies.
+- Shared provider tests prove one canonical candidate type and one
+  deterministic rejection boundary without promising identical live-model
+  wording.
+- CB-2025-0006 image-contract tests preserve written claims, pixel
+  observations, and view limitations as separate fields.
 - Diagnostic tests verify field-level error summaries, exact requested-fact
   coverage, credential redaction, restricted temporary-file permissions, and
   the absence of raw artifacts in normal mode.
@@ -484,20 +513,18 @@ evidence access.
 
 ## Intentionally not implemented
 
-- Automatic model selection or recommendation
-- Model benchmarking
+- Automatic model selection, routing, or benchmarking
 - Provider or model fallback
-- Extraction-attempt persistence
-- Policy decision tables
-- Representment-letter or evidence-package generation
+- Cross-provider retry or substitution
+- Provider-specific fact, policy, evaluation, or recommendation logic
+- Unstructured JSON fallback or response repair
+- Partial fact admission
+- Automatic live-provider qualification
 - Scheme submission or merchant communication
-- Analyst override
-- Analyst explanations
-- UI or API expansion
-- Live extraction coverage for all ten cases
 
 ## Recommended next milestone
 
-The next explicit phase is the analyst-review interface and/or deterministic
-representment-package preparation. The current recommendation is advisory and
-does not submit, communicate, or generate a final representment narrative.
+After explicit billable-run approval and secure credentials are available,
+run the isolated CB-2025-0004, CB-2025-0006, and CB-2025-0007 qualification
+pack separately for each provider. Until then, the honest provider status is
+`IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED`.

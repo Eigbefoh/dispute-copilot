@@ -75,6 +75,49 @@ def recompute_overall_status(
     evaluation: RequirementEvaluationResult,
 ) -> OverallEvaluationStatus:
     """Apply the fixed requirement aggregation precedence again."""
+    if evaluation.aggregation_summary is not None:
+        summary = evaluation.aggregation_summary
+        statuses = tuple(
+            item.status for item in evaluation.ordered_requirement_results
+        )
+        expected_counts = (
+            statuses.count(RequirementStatus.SATISFIED),
+            statuses.count(RequirementStatus.NOT_SATISFIED),
+            statuses.count(RequirementStatus.NOT_ESTABLISHED),
+            statuses.count(RequirementStatus.NOT_APPLICABLE),
+        )
+        actual_counts = (
+            summary.satisfied_count,
+            summary.not_satisfied_count,
+            summary.unresolved_count,
+            summary.not_applicable_count,
+        )
+        if actual_counts != expected_counts:
+            raise RecommendationInputError(
+                "Evaluation aggregation counts do not match requirement "
+                "outcomes"
+            )
+        if summary.mode == "ANY_TWO":
+            if summary.minimum_required != 2:
+                raise RecommendationInputError(
+                    "ANY_TWO aggregation must require exactly two routes"
+                )
+            if summary.satisfied_count >= 2:
+                return OverallEvaluationStatus.ALL_REQUIREMENTS_SATISFIED
+            if summary.maximum_possible_satisfied < 2:
+                return (
+                    OverallEvaluationStatus
+                    .ONE_OR_MORE_REQUIREMENTS_NOT_SATISFIED
+                )
+            return (
+                OverallEvaluationStatus
+                .ONE_OR_MORE_REQUIREMENTS_NOT_ESTABLISHED
+            )
+        if summary.mode != "ALL_APPLICABLE":
+            raise RecommendationInputError(
+                "Evaluation contains an unsupported aggregation mode"
+            )
+
     statuses = {
         item.status for item in evaluation.ordered_requirement_results
     }
@@ -88,7 +131,10 @@ def recompute_overall_status(
             OverallEvaluationStatus
             .ONE_OR_MORE_REQUIREMENTS_NOT_ESTABLISHED
         )
-    if statuses == {RequirementStatus.SATISFIED}:
+    if statuses <= {
+        RequirementStatus.SATISFIED,
+        RequirementStatus.NOT_APPLICABLE,
+    } and RequirementStatus.SATISFIED in statuses:
         return OverallEvaluationStatus.ALL_REQUIREMENTS_SATISFIED
     raise RecommendationInputError(
         "Evaluation contains no supported aggregate outcome"
