@@ -13,6 +13,7 @@ authors = [
     { name = "Dispute Copilot contributors" },
 ]
 dependencies = [
+    "anthropic>=0.104,<1",
     "gradio>=6.20,<7",
     "openai>=1.70,<3",
     "Pillow>=11,<13",

@@ -16,9 +16,17 @@ from pydantic import (
     field_validator,
 )
 
-from dispute_copilot.extraction.errors import ProviderConfigurationError
+from dispute_copilot.extraction.errors import (
+    ProviderConfigurationError,
+    UnsupportedProviderError,
+)
 
 DEFAULT_NEBIUS_BASE_URL = "https://api.tokenfactory.nebius.com/v1/"
+DEFAULT_OPENAI_BASE_URL = "https://api.openai.com/v1/"
+DEFAULT_ANTHROPIC_BASE_URL = "https://api.anthropic.com/"
+SUPPORTED_MODEL_PROVIDERS = frozenset(
+    {"nebius", "openai", "anthropic"}
+)
 
 GENERIC_ENV_NAMES = (
     "MODEL_PROVIDER",
@@ -124,6 +132,13 @@ def _load_generic_settings(
         raise ProviderConfigurationError(
             "MODEL_PROVIDER is required for live extraction."
         )
+    normalized_provider = provider.strip().lower()
+    if normalized_provider not in SUPPORTED_MODEL_PROVIDERS:
+        raise UnsupportedProviderError(
+            f"Unsupported model provider '{normalized_provider}'. "
+            "Registered providers: "
+            f"{sorted(SUPPORTED_MODEL_PROVIDERS)}"
+        )
     model = source.get("MODEL_NAME")
     if model is None or not model.strip():
         raise ProviderConfigurationError(
@@ -136,7 +151,7 @@ def _load_generic_settings(
             "MODEL_API_KEY is required for live extraction."
         )
     return _validate_settings(
-        provider=provider,
+        provider=normalized_provider,
         model=model,
         api_key=api_key,
         base_url=source.get("MODEL_BASE_URL"),

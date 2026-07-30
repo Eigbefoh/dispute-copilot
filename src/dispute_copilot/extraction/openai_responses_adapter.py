@@ -44,22 +44,20 @@ from dispute_copilot.extraction.provider_response_diagnostics import (
     format_candidate_coverage_summary,
     format_pydantic_validation_summary,
 )
+from dispute_copilot.extraction.vision_models import (
+    VISION_PROMPT_VERSION,
+    VISION_SCHEMA_VERSION,
+    VisionObservationResult,
+    render_vision_observations,
+)
+from dispute_copilot.extraction.vision_prompt import (
+    VISION_OBSERVATION_INSTRUCTIONS,
+)
 from dispute_copilot.policy.fact_models import FactDefinition
 
 ADAPTER_NAME = "openai_responses"
 PROMPT_VERSION = "lean-evidence-extraction/0.5.0"
-VISION_PROMPT_VERSION = "source-image-description/0.2.0"
 RESPONSE_SCHEMA_VERSION = "extraction-response/0.4.0"
-VISION_SCHEMA_VERSION = "evidence-page-text/0.1.0"
-VISION_DESCRIPTION_INSTRUCTIONS = """\
-Describe only content directly visible in this evidence image.
-Keep written captions separate from visual observations: captions are source
-assertions and do not establish facts about the depicted object. Preserve
-legible caption text as an assertion, then separately describe visible pixels.
-Do not compare the image with another document, claim the exact ordered item
-was delivered, infer that the item is defect-free, evaluate policy, or
-recommend an outcome.
-"""
 
 
 def create_openai_responses_client(
@@ -301,16 +299,19 @@ class OpenAIResponsesVisionProvider:
             adapter=ADAPTER_NAME,
             prompt_version=VISION_PROMPT_VERSION,
             schema_version=VISION_SCHEMA_VERSION,
-            parameters={"image_detail": IMAGE_DETAIL},
+            parameters={
+                "image_detail": IMAGE_DETAIL,
+                "structured_output": "pydantic_json_schema",
+            },
         )
         return identity.canonical_json()
 
     def describe_image(self, *, file_path: Path) -> str:
         media_type = media_type_for_image(file_path)
         try:
-            response = self.client.responses.create(
+            response = self.client.responses.parse(
                 model=self.settings.model,
-                instructions=VISION_DESCRIPTION_INSTRUCTIONS,
+                instructions=VISION_OBSERVATION_INSTRUCTIONS,
                 input=[
                     {
                         "role": "user",
@@ -318,8 +319,8 @@ class OpenAIResponsesVisionProvider:
                             {
                                 "type": "input_text",
                                 "text": (
-                                    "Create the source-preserving visual "
-                                    "description for this evidence image."
+                                    "Create the source-preserving structured "
+                                    "observations for this evidence image."
                                 ),
                             },
                             {
@@ -333,7 +334,20 @@ class OpenAIResponsesVisionProvider:
                         ],
                     }
                 ],
+                text_format=VisionObservationResult,
             )
+        except ValidationError as error:
+            summary = format_pydantic_validation_summary(
+                error,
+                settings=self.settings,
+            )
+            raise InvalidProviderResponseError(
+                provider_prefix(self.settings)
+                + " image observations were rejected by the "
+                "untrusted vision schema.\n"
+                "Validation errors:\n"
+                f"{summary}"
+            ) from error
         except Exception as error:
             raise_provider_invocation_error(
                 operation="image description",
@@ -341,13 +355,34 @@ class OpenAIResponsesVisionProvider:
                 settings=self.settings,
                 adapter_name=ADAPTER_NAME,
                 contract_description=(
-                    "Responses API multimodal contract"
+                    "Responses API multimodal and structured-output "
+                    "contract"
                 ),
             )
-        output_text = getattr(response, "output_text", None)
-        if not isinstance(output_text, str) or not output_text.strip():
+
+        parsed = getattr(response, "output_parsed", None)
+        if parsed is None:
             raise InvalidProviderResponseError(
                 provider_prefix(self.settings)
-                + " image description returned no text."
+                + " image conversion returned no structured "
+                "observations; no unstructured fallback was attempted."
             )
-        return output_text.strip()
+        try:
+            observations = (
+                parsed
+                if isinstance(parsed, VisionObservationResult)
+                else VisionObservationResult.model_validate(parsed)
+            )
+        except ValidationError as error:
+            summary = format_pydantic_validation_summary(
+                error,
+                settings=self.settings,
+            )
+            raise InvalidProviderResponseError(
+                provider_prefix(self.settings)
+                + " image observations were rejected by the "
+                "untrusted vision schema.\n"
+                "Validation errors:\n"
+                f"{summary}"
+            ) from error
+        return render_vision_observations(observations)

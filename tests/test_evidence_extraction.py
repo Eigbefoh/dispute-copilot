@@ -49,6 +49,12 @@ from dispute_copilot.extraction.models import (
     EvidencePage,
     ExtractionMethod,
 )
+from dispute_copilot.extraction.vision_models import (
+    VISION_PROMPT_VERSION,
+    VISION_SCHEMA_VERSION,
+    VisionObservationResult,
+    render_vision_observations,
+)
 from dispute_copilot.policy.fact_models import FactDefinition
 
 
@@ -56,7 +62,7 @@ class FakeResponses:
     def __init__(
         self,
         *,
-        parsed: ExtractionResponse | None = None,
+        parsed: object | None = None,
         output_text: str = "A sage armchair is visible.",
         error: Exception | None = None,
     ) -> None:
@@ -536,20 +542,65 @@ def test_malformed_provider_response_fails_closed(
 def test_same_model_client_can_describe_image(tmp_path: Path) -> None:
     image_path = tmp_path / "photo.png"
     image_path.write_bytes(b"image")
-    responses = FakeResponses(output_text="A sage armchair is visible.")
+    observations = VisionObservationResult(
+        written_text_observations=(
+            "Carlton Armchair (Sage) — delivered 18 Apr 2025",
+        ),
+        visible_pixel_observations=(
+            "A front-facing sage armchair is visible.",
+        ),
+        limitations=(
+            "Only a front view is visible; hidden condition cannot be "
+            "established.",
+        ),
+    )
+    responses = FakeResponses(parsed=observations)
     provider = OpenAIResponsesVisionProvider(
         client=FakeClient(responses),
         settings=provider_settings(),
     )
 
     assert provider.describe_image(file_path=image_path) == (
-        "A sage armchair is visible."
+        render_vision_observations(observations)
     )
-    assert len(responses.create_calls) == 1
+    assert len(responses.parse_calls) == 1
+    call = responses.parse_calls[0]
+    assert call["text_format"] is VisionObservationResult
     identity = json.loads(provider.provider_version)
     assert identity["provider"] == "nebius"
     assert identity["model"] == "user-selected-nebius-model"
     assert identity["adapter"] == "openai_responses"
+    assert identity["prompt_version"] == VISION_PROMPT_VERSION
+    assert identity["schema_version"] == VISION_SCHEMA_VERSION
+    assert identity["parameters"]["structured_output"] == (
+        "pydantic_json_schema"
+    )
+
+
+def test_image_description_fails_closed_on_invalid_observations(
+    tmp_path: Path,
+) -> None:
+    image_path = tmp_path / "photo.png"
+    image_path.write_bytes(b"image")
+    responses = FakeResponses(
+        parsed={
+            "written_text_observations": [],
+            "visible_pixel_observations": [
+                "The chair is defect-free."
+            ],
+            "limitations": ["Only the front is visible."],
+        }
+    )
+    provider = OpenAIResponsesVisionProvider(
+        client=FakeClient(responses),
+        settings=provider_settings(),
+    )
+
+    with pytest.raises(
+        InvalidProviderResponseError,
+        match="hidden condition",
+    ):
+        provider.describe_image(file_path=image_path)
 
 
 def test_untrusted_schema_has_no_evaluation_fields() -> None:

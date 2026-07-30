@@ -149,6 +149,8 @@ def raise_provider_invocation_error(
         "json_schema",
         "structured output",
         "structured_output",
+        "output_config",
+        "json output",
         "text_format",
         "text.format",
         "input_image",

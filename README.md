@@ -4,6 +4,10 @@ Dispute Copilot is an application for processing payment disputes through a
 traceable pipeline of evidence intake, policy evaluation, decisioning, and
 analyst review.
 
+For the reproducible v4 setup, operating workflow, live and cached run
+instructions, persistence checks, and current limitations, see
+[docs/v4-reproducibility-guide.md](docs/v4-reproducibility-guide.md).
+
 The repository now contains an end-to-end, immutable decision pipeline:
 
 ```text
@@ -203,12 +207,12 @@ the operating system's temporary directory. It is never written to SQLite or
 the repository, but it may contain evidence-derived output and should be
 deleted after local review.
 
-Live model inference is provider-pluggable. The application currently
-registers `nebius` and `openai_compatible`. Nebius evidence extraction uses
-its documented Chat Completions JSON-schema route, while its source-image
-description uses the Responses route. Generic `openai_compatible` extraction
-uses the Responses adapter. The `openai` Python package is a transport client,
-not an implicit provider choice.
+Live model inference is provider-pluggable. The application registers exactly
+`nebius`, `openai`, and `anthropic`. Nebius evidence extraction preserves its
+tested Chat Completions JSON-schema route. OpenAI uses the native Responses
+API, and Anthropic uses the native Messages API with
+`output_config.format` JSON Schema output. No generic compatible-provider
+route is registered.
 
 The required runtime configuration is:
 
@@ -221,10 +225,12 @@ MODEL_BASE_URL=
 
 The user must select the exact provider and model. The application has no
 default model, performs no automatic model selection, and never substitutes a
-provider or model after an error. Nebius has a registered Token Factory
-endpoint; `openai_compatible` requires an explicit `MODEL_BASE_URL`. Missing or
-unsupported configuration stops the command before evidence is read or
-encoded. Deprecated `NEBIUS_*` variables are accepted only through an isolated
+provider or model after an error. When `MODEL_BASE_URL` is omitted, each
+registered provider receives only its declared default endpoint: Nebius Token
+Factory, the OpenAI API, or the Anthropic API. An explicit credential-free
+HTTP(S) base URL may be supplied. Missing, unsupported, or incompatible
+configuration stops the command before a partial result can be admitted.
+Deprecated `NEBIUS_*` variables are accepted only through an isolated
 compatibility bridge and must not be mixed with `MODEL_*`.
 
 The service rechecks the admitted evidence hashes, converts or retrieves all
@@ -255,6 +261,25 @@ Provider-facing evidence references form a discriminated union:
 Writing printed inside an image remains TEXT evidence even when the page's
 recorded conversion method is `VISION`. If writing and visible pixels both
 support a value, the provider must return two separate references.
+
+Before fact extraction, every provider converts images through one structured
+contract:
+
+- `written_text_observations` preserves visible writing as source assertions;
+- `visible_pixel_observations` contains conservative non-text pixel
+  observations;
+- `limitations` states what the supplied view cannot establish.
+
+The three sections are validated and rendered deterministically into canonical
+page text. A delivery photo cannot establish hidden condition, lack of wobble,
+absence of hidden damage, complete product matching, or customer return
+behaviour. Invalid image output fails closed rather than falling back to a
+free-form description.
+
+Provider equivalence means that every provider receives the same admitted
+evidence, requested facts, instructions, canonical schemas, and deterministic
+admission and decision boundaries. Different live models may still produce
+different valid wording or candidate values.
 
 The command prints the admitted fact status and provenance followed by
 `READY_FOR_EVALUATION`. A successful result is stored as an immutable,
@@ -370,16 +395,27 @@ analyst identity. Keep the credential in an ignored local environment file;
 never add it to the repository or command history.
 
 ```bash
-export MODEL_PROVIDER="nebius"
-export MODEL_NAME="<exact-model-id>"
-export MODEL_API_KEY="<secret>"
-export MODEL_BASE_URL="https://api.tokenfactory.nebius.com/v1/"
+export MODEL_PROVIDER="<nebius|openai|anthropic>"
+export MODEL_NAME="<exact-provider-model-id>"
+export MODEL_API_KEY="<provider-api-key>"
+# Optional: omit to use the selected provider's registered endpoint.
+export MODEL_BASE_URL="<credential-free-provider-api-base-url>"
 export ANALYST_IDENTITY="<local-analyst-id>"
 
 python -m dispute_copilot.application.demo \
   --mode live \
   --database data/demo-validation.db
 ```
+
+Registered endpoint defaults are:
+
+- `nebius`: `https://api.tokenfactory.nebius.com/v1/`
+- `openai`: `https://api.openai.com/v1/`
+- `anthropic`: `https://api.anthropic.com/`
+
+The configured model must support image input and the adapter's exact
+structured-output contract. An incompatible model fails closed; the system
+does not select another model or provider.
 
 `Run Selected Case` and `Run All Cases` invoke the same application backend.
 Batch execution is sequential. A failed case is recorded as `FAILED` with a
