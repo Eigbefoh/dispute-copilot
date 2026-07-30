@@ -266,6 +266,23 @@ instructions, and canonical candidate contract. Everything after the provider
 boundary uses the same deterministic validation, evaluation, recommendation,
 and review pipeline.
 
+### Provider validation status
+
+Live development and end-to-end validation have used the Nebius API. The
+OpenAI and Anthropic adapters are implemented and covered by the shared offline
+provider-contract tests, but they have not yet been explicitly validated
+against live OpenAI or Anthropic models.
+
+The repository is designed to work with all three registered providers, but
+live model compatibility still depends on the selected model supporting image
+input and the required structured-output schema. Until the relevant live
+qualification test succeeds, OpenAI and Anthropic should be described as
+**implemented and contract-tested, not live-validated**.
+
+For help arranging Nebius test access, contact
+[viceigbefoh@gmail.com](mailto:viceigbefoh@gmail.com). Never commit, publish, or
+send API credentials through an insecure channel.
+
 ## Verification
 
 Run the ordinary offline regression suite:
