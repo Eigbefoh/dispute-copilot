@@ -288,20 +288,49 @@ def _validate_recommendation_causes(
     recommendation: RecommendationResult,
     evaluation: RequirementEvaluationResult,
 ) -> None:
-    causal_status, expected_basis = {
-        Recommendation.RECOMMEND_REPRESENT: (
-            RequirementStatus.SATISFIED,
-            RecommendationBasisCode.ALL_MANDATORY_REQUIREMENTS_SATISFIED,
+    expected_basis = recommendation.basis_codes[0]
+    causal_statuses, expected_recommendation = {
+        RecommendationBasisCode.ALL_MANDATORY_REQUIREMENTS_SATISFIED: (
+            (RequirementStatus.SATISFIED,),
+            Recommendation.RECOMMEND_REPRESENT,
         ),
-        Recommendation.RECOMMEND_DO_NOT_REPRESENT: (
-            RequirementStatus.NOT_SATISFIED,
-            RecommendationBasisCode.MANDATORY_REQUIREMENT_NOT_SATISFIED,
+        RecommendationBasisCode.MISCODING_EXCEPTION_ESTABLISHED: (
+            (RequirementStatus.SATISFIED,),
+            Recommendation.RECOMMEND_REPRESENT,
         ),
-        Recommendation.INSUFFICIENT_EVIDENCE_TO_REPRESENT: (
-            RequirementStatus.NOT_ESTABLISHED,
-            RecommendationBasisCode.MANDATORY_REQUIREMENT_NOT_ESTABLISHED,
+        RecommendationBasisCode.MANDATORY_REQUIREMENT_NOT_SATISFIED: (
+            (RequirementStatus.NOT_SATISFIED,),
+            Recommendation.RECOMMEND_DO_NOT_REPRESENT,
         ),
-    }[recommendation.recommendation]
+        RecommendationBasisCode.DEFAULT_ACCEPT_LIABILITY_UNLESS_EXCEPTION_ESTABLISHED: (
+            (
+                RequirementStatus.NOT_SATISFIED,
+                RequirementStatus.NOT_ESTABLISHED,
+            ),
+            Recommendation.RECOMMEND_DO_NOT_REPRESENT,
+        ),
+        RecommendationBasisCode.MANDATORY_REQUIREMENT_NOT_ESTABLISHED: (
+            (RequirementStatus.NOT_ESTABLISHED,),
+            Recommendation.INSUFFICIENT_EVIDENCE_TO_REPRESENT,
+        ),
+    }[expected_basis]
+    if recommendation.recommendation is not expected_recommendation:
+        raise AnalystReviewInputError(
+            "Recommendation basis disagrees with its stored decision"
+        )
+    represented_statuses = tuple(
+        dict.fromkeys(
+            item.status
+            for item in recommendation.causal_requirement_results
+        )
+    )
+    if (
+        not represented_statuses
+        or any(status not in causal_statuses for status in represented_statuses)
+    ):
+        raise AnalystReviewInputError(
+            "Recommendation causes use statuses not allowed by its basis"
+        )
     expected_causes = tuple(
         CausalRequirementResult(
             requirement_id=item.requirement_id,
@@ -310,13 +339,9 @@ def _validate_recommendation_causes(
             evaluation_basis_codes=item.basis_codes,
         )
         for item in evaluation.ordered_requirement_results
-        if item.status is causal_status
+        if item.status in represented_statuses
     )
     if recommendation.causal_requirement_results != expected_causes:
         raise AnalystReviewInputError(
             "Recommendation causes disagree with evaluation outcomes"
-        )
-    if recommendation.basis_codes != (expected_basis,):
-        raise AnalystReviewInputError(
-            "Recommendation basis disagrees with its stored decision"
         )

@@ -143,6 +143,9 @@ def _validate_node(
             referenced |= _validate_node(child, definitions)
         return referenced
 
+    if node.operator is PredicateOperator.UNRESOLVED_POLICY_CONDITION:
+        return set()
+
     assert node.fact_name is not None
     definition = _definition(node.fact_name, definitions)
     referenced = {node.fact_name}
@@ -153,6 +156,13 @@ def _validate_node(
             definitions,
         )
         referenced.add(node.other_fact_name)
+    numeric_bound_definition: FactDefinition | None = None
+    if node.numeric_bound_fact_name is not None:
+        numeric_bound_definition = _definition(
+            node.numeric_bound_fact_name,
+            definitions,
+        )
+        referenced.add(node.numeric_bound_fact_name)
 
     if node.operator is PredicateOperator.FACT_EQUALS:
         if other_definition is not None:
@@ -170,6 +180,29 @@ def _validate_node(
     elif node.operator is PredicateOperator.FACT_IN:
         for value in node.expected_values:
             _require_literal_type(value, definition, node.operator)
+    elif node.operator is PredicateOperator.NORMALIZED_STRING_EQUALS:
+        if definition.value_type not in {"STRING", "ADDRESS"}:
+            raise PredicateContractError(
+                "normalized_string_equals requires a string fact"
+            )
+        if other_definition is not None:
+            if other_definition.value_type not in {"STRING", "ADDRESS"}:
+                raise PredicateContractError(
+                    "normalized_string_equals requires string operands"
+                )
+        elif type(node.expected_value) is not str:
+            raise PredicateContractError(
+                "normalized_string_equals requires a string literal"
+            )
+    elif node.operator is PredicateOperator.NORMALIZED_STRING_IN:
+        if definition.value_type not in {"STRING", "ADDRESS"}:
+            raise PredicateContractError(
+                "normalized_string_in requires a string fact"
+            )
+        if any(type(value) is not str for value in node.expected_values):
+            raise PredicateContractError(
+                "normalized_string_in requires string literals"
+            )
     elif node.operator is PredicateOperator.MATERIAL_ADDRESS_MATCH:
         if other_definition is None:
             raise PredicateContractError(
@@ -208,6 +241,26 @@ def _validate_node(
         raise PredicateContractError(
             f"{node.operator} requires INTEGER or DECIMAL fact"
         )
+    elif node.operator is PredicateOperator.HOURS_BEFORE_LESS_THAN:
+        if definition.value_type != "DATETIME":
+            raise PredicateContractError(
+                "hours_before_less_than requires a DATETIME first fact"
+            )
+        if (
+            other_definition is None
+            or other_definition.value_type != "DATETIME"
+        ):
+            raise PredicateContractError(
+                "hours_before_less_than requires a DATETIME second fact"
+            )
+        if (
+            numeric_bound_definition is None
+            or numeric_bound_definition.value_type
+            not in {"INTEGER", "DECIMAL"}
+        ):
+            raise PredicateContractError(
+                "hours_before_less_than requires a numeric bound fact"
+            )
     return referenced
 
 

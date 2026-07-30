@@ -19,12 +19,16 @@ class PredicateOperator(StrEnum):
     FACT_IS_FOUND = "fact_is_found"
     FACT_EQUALS = "fact_equals"
     FACT_IN = "fact_in"
+    NORMALIZED_STRING_EQUALS = "normalized_string_equals"
+    NORMALIZED_STRING_IN = "normalized_string_in"
     MATERIAL_ADDRESS_MATCH = "material_address_match"
     DATE_ON_OR_BEFORE = "date_on_or_before"
     DATE_ON_OR_AFTER = "date_on_or_after"
     DAYS_BETWEEN_AT_MOST = "days_between_at_most"
     NUMERIC_AT_LEAST = "numeric_at_least"
     NUMERIC_AT_MOST = "numeric_at_most"
+    HOURS_BEFORE_LESS_THAN = "hours_before_less_than"
+    UNRESOLVED_POLICY_CONDITION = "unresolved_policy_condition"
 
 
 class ValueMatch(StrEnum):
@@ -63,6 +67,11 @@ class PredicateNode(BaseModel):
     expected_values: tuple[PredicateScalar, ...] = ()
     maximum_days: int | None = Field(default=None, ge=0)
     numeric_bound: Decimal | None = None
+    numeric_bound_fact_name: str | None = None
+    basis_code: str | None = Field(
+        default=None,
+        pattern=r"^[A-Z][A-Z0-9_]*$",
+    )
     value_match: ValueMatch = ValueMatch.ANY
     mismatch_result: MismatchResult = MismatchResult.FALSE
 
@@ -84,6 +93,19 @@ class PredicateNode(BaseModel):
                 "value_match",
             },
             PredicateOperator.FACT_IN: {
+                "operator",
+                "fact_name",
+                "expected_values",
+                "value_match",
+            },
+            PredicateOperator.NORMALIZED_STRING_EQUALS: {
+                "operator",
+                "fact_name",
+                "other_fact_name",
+                "expected_value",
+                "value_match",
+            },
+            PredicateOperator.NORMALIZED_STRING_IN: {
                 "operator",
                 "fact_name",
                 "expected_values",
@@ -129,6 +151,17 @@ class PredicateNode(BaseModel):
                 "numeric_bound",
                 "value_match",
             },
+            PredicateOperator.HOURS_BEFORE_LESS_THAN: {
+                "operator",
+                "fact_name",
+                "other_fact_name",
+                "numeric_bound_fact_name",
+                "value_match",
+            },
+            PredicateOperator.UNRESOLVED_POLICY_CONDITION: {
+                "operator",
+                "basis_code",
+            },
         }
         unexpected = self.model_fields_set - allowed_fields[self.operator]
         if unexpected:
@@ -159,6 +192,8 @@ class PredicateNode(BaseModel):
                     self.expected_value,
                     self.maximum_days,
                     self.numeric_bound,
+                    self.numeric_bound_fact_name,
+                    self.basis_code,
                 )
             ) or self.expected_values:
                 raise ValueError(
@@ -170,6 +205,12 @@ class PredicateNode(BaseModel):
             raise ValueError(
                 f"{self.operator} cannot contain child predicates"
             )
+        if self.operator is PredicateOperator.UNRESOLVED_POLICY_CONDITION:
+            if not self.basis_code:
+                raise ValueError(
+                    "unresolved_policy_condition requires basis_code"
+                )
+            return self
         if not self.fact_name:
             raise ValueError(f"{self.operator} requires fact_name")
 
@@ -186,6 +227,19 @@ class PredicateNode(BaseModel):
         elif self.operator is PredicateOperator.FACT_IN:
             if not self.expected_values:
                 raise ValueError("fact_in requires expected_values")
+        elif self.operator is PredicateOperator.NORMALIZED_STRING_EQUALS:
+            if (self.expected_value is None) == (
+                self.other_fact_name is None
+            ):
+                raise ValueError(
+                    "normalized_string_equals requires exactly one of "
+                    "expected_value or other_fact_name"
+                )
+        elif self.operator is PredicateOperator.NORMALIZED_STRING_IN:
+            if not self.expected_values:
+                raise ValueError(
+                    "normalized_string_in requires expected_values"
+                )
         elif self.operator is PredicateOperator.MATERIAL_ADDRESS_MATCH:
             if self.other_fact_name is None:
                 raise ValueError(
@@ -215,6 +269,15 @@ class PredicateNode(BaseModel):
                 raise ValueError(
                     f"{self.operator} requires numeric_bound"
                 )
+        elif self.operator is PredicateOperator.HOURS_BEFORE_LESS_THAN:
+            if (
+                self.other_fact_name is None
+                or self.numeric_bound_fact_name is None
+            ):
+                raise ValueError(
+                    "hours_before_less_than requires other_fact_name and "
+                    "numeric_bound_fact_name"
+                )
         return self
 
     def _require_no_operands(self) -> None:
@@ -225,6 +288,8 @@ class PredicateNode(BaseModel):
                 self.expected_value,
                 self.maximum_days,
                 self.numeric_bound,
+                self.numeric_bound_fact_name,
+                self.basis_code,
             )
         ) or self.expected_values:
             raise ValueError("fact_is_found accepts no operands")

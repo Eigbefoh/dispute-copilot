@@ -12,6 +12,7 @@ from dispute_copilot.intake.evidence_registry import (
     UnsupportedEvidenceError,
 )
 from dispute_copilot.policy.import_rulebook import import_rulebook
+from dispute_copilot.policy.constants import DEFAULT_RULEBOOK_VERSION
 from dispute_copilot.policy.repository import (
     SQLitePolicySelectionRepository,
 )
@@ -55,6 +56,18 @@ def test_cli_creates_saves_and_prints_run(
     assert saved_run.run_id == run_id
     assert saved_run.case_snapshot.case_id == "CB-2025-0001"
     assert len(saved_run.evidence_snapshot) == 2
+
+
+def test_cli_policy_selection_defaults_to_take_home_v4() -> None:
+    arguments = cli.build_parser().parse_args(
+        [
+            "select-policy",
+            "00000000-0000-0000-0000-000000000001",
+        ]
+    )
+
+    assert DEFAULT_RULEBOOK_VERSION == "take-home-v4"
+    assert arguments.rulebook_version == DEFAULT_RULEBOOK_VERSION
 
 
 def test_cli_get_run_retrieves_persisted_snapshot(

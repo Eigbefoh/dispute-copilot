@@ -1,0 +1,71 @@
+{
+  "mapping_key": "policy-aware-representment-eligibility-v2",
+  "mapping_version": "2.0.0",
+  "mapping_schema_version": "2.0.0",
+  "ordered_rules": [
+    {
+      "priority": 1,
+      "when_overall_evaluation_status": "ALL_REQUIREMENTS_SATISFIED",
+      "produce": "RECOMMEND_REPRESENT",
+      "basis_code": "MISCODING_EXCEPTION_ESTABLISHED",
+      "when_policy_ids": [
+        "visa-10.5-take-home-v4"
+      ],
+      "when_rulebook_versions": [
+        "take-home-v4"
+      ],
+      "causal_requirement_statuses": [
+        "SATISFIED"
+      ]
+    },
+    {
+      "priority": 2,
+      "when_overall_evaluation_status": "ONE_OR_MORE_REQUIREMENTS_NOT_SATISFIED",
+      "produce": "RECOMMEND_DO_NOT_REPRESENT",
+      "basis_code": "DEFAULT_ACCEPT_LIABILITY_UNLESS_EXCEPTION_ESTABLISHED",
+      "when_policy_ids": [
+        "visa-10.5-take-home-v4"
+      ],
+      "when_rulebook_versions": [
+        "take-home-v4"
+      ],
+      "causal_requirement_statuses": [
+        "NOT_SATISFIED"
+      ]
+    },
+    {
+      "priority": 3,
+      "when_overall_evaluation_status": "ONE_OR_MORE_REQUIREMENTS_NOT_ESTABLISHED",
+      "produce": "RECOMMEND_DO_NOT_REPRESENT",
+      "basis_code": "DEFAULT_ACCEPT_LIABILITY_UNLESS_EXCEPTION_ESTABLISHED",
+      "when_policy_ids": [
+        "visa-10.5-take-home-v4"
+      ],
+      "when_rulebook_versions": [
+        "take-home-v4"
+      ],
+      "causal_requirement_statuses": [
+        "NOT_ESTABLISHED"
+      ]
+    },
+    {
+      "priority": 4,
+      "when_overall_evaluation_status": "ONE_OR_MORE_REQUIREMENTS_NOT_SATISFIED",
+      "produce": "RECOMMEND_DO_NOT_REPRESENT",
+      "basis_code": "MANDATORY_REQUIREMENT_NOT_SATISFIED"
+    },
+    {
+      "priority": 5,
+      "when_overall_evaluation_status": "ONE_OR_MORE_REQUIREMENTS_NOT_ESTABLISHED",
+      "produce": "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+      "basis_code": "MANDATORY_REQUIREMENT_NOT_ESTABLISHED"
+    },
+    {
+      "priority": 6,
+      "when_overall_evaluation_status": "ALL_REQUIREMENTS_SATISFIED",
+      "produce": "RECOMMEND_REPRESENT",
+      "basis_code": "ALL_MANDATORY_REQUIREMENTS_SATISFIED"
+    }
+  ],
+  "integrity_hash": "b3be1ffb00ac1e498b01a4edee86dbecfa2ef98f5fcc14fb211b8d783ce2bcac"
+}

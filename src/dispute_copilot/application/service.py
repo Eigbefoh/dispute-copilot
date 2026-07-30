@@ -11,6 +11,12 @@ from uuid import UUID
 from pydantic import TypeAdapter, ValidationError
 
 from dispute_copilot.analyst_review.models import AnalystReviewPackage
+from dispute_copilot.analyst_review.action_repository import (
+    SQLiteSuggestedActionRepository,
+)
+from dispute_copilot.analyst_review.action_service import (
+    create_suggested_analyst_action,
+)
 from dispute_copilot.analyst_review.registry import (
     DEFAULT_PRESENTATION_RULES_KEY,
     DEFAULT_PRESENTATION_RULES_ROOT,
@@ -62,6 +68,7 @@ from dispute_copilot.human_review.display_adapter import (
 from dispute_copilot.intake.case_loader import load_case
 from dispute_copilot.orchestration.service import create_case_run
 from dispute_copilot.policy.import_rulebook import import_rulebook
+from dispute_copilot.policy.constants import DEFAULT_RULEBOOK_VERSION
 from dispute_copilot.policy.repository import SQLitePolicyRepository
 from dispute_copilot.policy.selection_service import select_policy_for_run
 from dispute_copilot.recommendation.service import create_recommendation
@@ -69,9 +76,11 @@ from dispute_copilot.repositories.sqlite import SQLiteCaseRunRepository
 
 _CASE_LIST_ADAPTER = TypeAdapter(list[Case])
 
-DEFAULT_RULEBOOK_VERSION = "take-home-v3"
 DEFAULT_MAPPING_KEY = "default-representment-eligibility-v1"
 DEFAULT_MAPPING_VERSION = "1.0.0"
+V4_MAPPING_KEY = "policy-aware-representment-eligibility-v2"
+V4_MAPPING_VERSION = "2.0.0"
+V4_PRESENTATION_RULES_VERSION = "1.3.0"
 
 RuntimeFactory = Callable[[], ExtractionRuntime]
 
@@ -90,13 +99,11 @@ class DisputeCopilotApplication:
         rulebook_root: Path | None = None,
         rulebook_version: str = DEFAULT_RULEBOOK_VERSION,
         mapping_root: Path | None = None,
-        mapping_key: str = DEFAULT_MAPPING_KEY,
-        mapping_version: str = DEFAULT_MAPPING_VERSION,
+        mapping_key: str | None = None,
+        mapping_version: str | None = None,
         presentation_rules_root: Path | None = None,
         presentation_rules_key: str = DEFAULT_PRESENTATION_RULES_KEY,
-        presentation_rules_version: str = (
-            DEFAULT_PRESENTATION_RULES_VERSION
-        ),
+        presentation_rules_version: str | None = None,
         runtime_factory: RuntimeFactory | None = None,
         auto_provision_rulebook: bool = True,
     ) -> None:
@@ -118,14 +125,26 @@ class DisputeCopilotApplication:
             mapping_root
             or self.project_root / "data" / "recommendation-mappings"
         )
-        self.mapping_key = mapping_key
-        self.mapping_version = mapping_version
+        default_mapping = (
+            (V4_MAPPING_KEY, V4_MAPPING_VERSION)
+            if rulebook_version == "take-home-v4"
+            else (DEFAULT_MAPPING_KEY, DEFAULT_MAPPING_VERSION)
+        )
+        self.mapping_key = mapping_key or default_mapping[0]
+        self.mapping_version = mapping_version or default_mapping[1]
         self.presentation_rules_root = (
             presentation_rules_root
             or self.project_root / "data" / "presentation-rules"
         )
         self.presentation_rules_key = presentation_rules_key
-        self.presentation_rules_version = presentation_rules_version
+        self.presentation_rules_version = (
+            presentation_rules_version
+            or (
+                V4_PRESENTATION_RULES_VERSION
+                if rulebook_version == "take-home-v4"
+                else DEFAULT_PRESENTATION_RULES_VERSION
+            )
+        )
         self.runtime_factory = (
             runtime_factory or self._create_configured_runtime
         )
@@ -337,6 +356,12 @@ class DisputeCopilotApplication:
                 "Completed attempt references a missing fact resolution"
             )
         identity = _model_identity(resolution.resolver_version)
+        suggested_action = SQLiteSuggestedActionRepository(
+            self.database_path,
+            initialize_schema=(
+                self.execution_mode is ExecutionMode.LIVE
+            ),
+        ).get_for_package(package.review_package_id)
         lineage = package.lineage
         return AnalystCaseView(
             case=case,
@@ -344,6 +369,7 @@ class DisputeCopilotApplication:
             execution_mode=execution_mode,
             attempt=attempt,
             package=package,
+            suggested_action=suggested_action,
             resolution=resolution,
             evidence_targets=self.locate_evidence(case.case_id),
             technical_lineage=TechnicalLineage(
@@ -430,6 +456,11 @@ class DisputeCopilotApplication:
                 ),
                 database_path=self.database_path,
                 presentation_rules_root=self.presentation_rules_root,
+            )
+            stage = "SUGGESTED_ANALYST_ACTION"
+            create_suggested_analyst_action(
+                package=package,
+                database_path=self.database_path,
             )
             completed = self.repository.mark_completed(
                 attempt.attempt_id,

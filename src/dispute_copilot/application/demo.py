@@ -17,6 +17,8 @@ from dispute_copilot.human_review.identity import (
     resolve_trusted_analyst_identity,
 )
 
+DEFAULT_DEMO_DATABASE = Path("data/v4-live-validation.db")
+
 
 def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
@@ -31,7 +33,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--database",
         type=Path,
-        default=Path("data/demo-validation.db"),
+        default=DEFAULT_DEMO_DATABASE,
     )
     parser.add_argument(
         "--project-root",

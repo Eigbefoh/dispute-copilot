@@ -11,6 +11,9 @@ import pytest
 from dispute_copilot.application.errors import (
     CachedExecutionDisabledError,
 )
+from dispute_copilot.application.demo import (
+    build_parser as build_demo_parser,
+)
 from dispute_copilot.application.models import (
     ExecutionMode,
     ExecutionStatus,
@@ -19,6 +22,7 @@ from dispute_copilot.application.repository import (
     SQLiteApplicationRepository,
 )
 from dispute_copilot.application.service import (
+    DEFAULT_RULEBOOK_VERSION,
     DisputeCopilotApplication,
 )
 from dispute_copilot.analyst_review.registry import load_presentation_rules
@@ -110,9 +114,45 @@ def _application(
         database_path=database_path,
         project_root=PROJECT_ROOT,
         execution_mode=mode,
+        rulebook_version="take-home-v3",
         runtime_factory=_runtime(fail_case),
         auto_provision_rulebook=False,
     )
+
+
+def test_new_application_runs_default_to_take_home_v4(
+    tmp_path: Path,
+) -> None:
+    application = DisputeCopilotApplication(
+        database_path=tmp_path / "default-v4.db",
+        project_root=PROJECT_ROOT,
+        runtime_factory=_runtime(),
+    )
+
+    assert DEFAULT_RULEBOOK_VERSION == "take-home-v4"
+    assert application.rulebook_version == "take-home-v4"
+    assert application.mapping_key == (
+        "policy-aware-representment-eligibility-v2"
+    )
+    assert application.mapping_version == "2.0.0"
+    assert application.presentation_rules_version == "1.3.0"
+
+    arguments = build_demo_parser().parse_args(["--mode", "live"])
+    assert arguments.rulebook_version == "take-home-v4"
+    assert arguments.database == Path("data/v4-live-validation.db")
+
+
+def test_explicit_take_home_v3_retains_historical_defaults(
+    application_database: Path,
+) -> None:
+    application = _application(application_database)
+
+    assert application.rulebook_version == "take-home-v3"
+    assert application.mapping_key == (
+        "default-representment-eligibility-v1"
+    )
+    assert application.mapping_version == "1.0.0"
+    assert application.presentation_rules_version == "1.2.0"
 
 
 def test_lists_all_cases_in_source_order(
@@ -241,6 +281,7 @@ def test_completed_result_reopens_after_restart_without_model_runtime(
         database_path=application_database,
         project_root=PROJECT_ROOT,
         execution_mode=ExecutionMode.LIVE,
+        rulebook_version="take-home-v3",
         runtime_factory=forbidden_runtime,
         auto_provision_rulebook=False,
     )
@@ -256,6 +297,7 @@ def test_completed_result_reopens_after_restart_without_model_runtime(
         database_path=application_database,
         project_root=PROJECT_ROOT,
         execution_mode=ExecutionMode.CACHED_VIEW,
+        rulebook_version="take-home-v3",
         runtime_factory=forbidden_runtime,
         auto_provision_rulebook=False,
     )
@@ -286,6 +328,7 @@ def test_cached_mode_never_creates_runtime_or_attempt(
         database_path=application_database,
         project_root=PROJECT_ROOT,
         execution_mode=ExecutionMode.CACHED_VIEW,
+        rulebook_version="take-home-v3",
         runtime_factory=forbidden_runtime,
         auto_provision_rulebook=False,
     )
@@ -432,6 +475,7 @@ def test_cached_mode_discovers_genuine_baseline_without_mutating_it() -> None:
         database_path=database_path,
         project_root=PROJECT_ROOT,
         execution_mode=ExecutionMode.CACHED_VIEW,
+        rulebook_version="take-home-v3",
     )
 
     queue = application.list_cases()

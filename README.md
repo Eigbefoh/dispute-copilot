@@ -414,13 +414,40 @@ Successful extraction records expose provider, model, adapter, prompt version,
 schema version and non-secret parameters through technical lineage. Request
 latency, token usage and estimated cost are currently shown as `NOT RECORDED`.
 
-The demo currently defaults to the preserved `take-home-v3` pipeline. Its known
-critical policy limitations are documented in
-`docs/critical-policy-demo-feasibility.json`. A corrected
-`take-home-v4-demo` is intentionally blocked until the structured-fact,
-product-materiality and Visa 10.5 outcome gates in that assessment are
-approved. The UI must therefore not be presented as proof of corrected
-all-case policy fidelity yet.
+New application and policy-selection runs default to the corrected
+`take-home-v4` pipeline. This selects the v4 policy snapshots, policy-aware
+recommendation mapping, suggested analyst actions, and v4 presentation rules
+without requiring a rulebook flag. Historical v3 policies and persisted
+results remain unchanged and retrievable.
+
+Verify the v4 ten-case behavioural contract offline with:
+
+```bash
+python -m pytest -q tests/test_v4_case_behaviour.py
+```
+
+Launch a live v4 analyst demo:
+
+```bash
+python -m dispute_copilot.application.demo \
+  --mode live
+```
+
+A completed result can be reopened without a provider call by changing
+`--mode live` to `--mode cached`. Both modes default to the isolated
+`data/v4-live-validation.db`.
+
+To reproduce the preserved historical pipeline explicitly:
+
+```bash
+python -m dispute_copilot.application.demo \
+  --mode cached \
+  --rulebook-version take-home-v3 \
+  --database data/demo-validation.db
+```
+
+The known v3 policy limitations remain documented in
+`docs/critical-policy-demo-feasibility.json`.
 
 The cross-case acceptance suite proves the same implementation against:
 

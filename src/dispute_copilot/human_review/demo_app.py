@@ -668,6 +668,51 @@ def _gaps_markdown(view: AnalystCaseView) -> str:
             f"(`{gap.resolution_status}`)"
             for gap in view.package.evidence_gaps
         )
+    insufficient = tuple(
+        (
+            requirement.requirement_id,
+            reference.fact_name,
+        )
+        for requirement in view.package.requirement_checklist
+        if requirement.status.value != "SATISFIED"
+        for reference in requirement.supporting_fact_refs
+    )
+    lines.extend(("", "### Submitted evidence that is not sufficient"))
+    if insufficient:
+        lines.extend(
+            f"- `{fact_name}` is relevant to `{requirement_id}`, but the "
+            "requirement is not established or is not satisfied."
+            for requirement_id, fact_name in insufficient
+        )
+    else:
+        lines.append("No such submitted evidence is recorded.")
+    if any(
+        "LIMITED_VIEW_CANNOT_ESTABLISH_MATERIAL_ITEM_CONDITION"
+        in requirement.evaluation_basis_codes
+        for requirement in view.package.requirement_checklist
+    ):
+        lines.extend(
+            (
+                "",
+                "### Deliberately not inferred",
+                "- A limited delivery image is not treated as proof that "
+                "there is no hidden damage, wobble, structural defect, or "
+                "other non-visible condition.",
+            )
+        )
+    lines.extend(("", "### Suggested next action"))
+    action = view.suggested_action
+    if action is None:
+        lines.append(
+            "No persisted suggested action is available for this package."
+        )
+    else:
+        lines.append(f"**`{action.action.value}`**")
+        lines.extend(f"- {item}" for item in action.requested_items)
+        lines.append(
+            "_This suggestion is separate from, and does not alter, the "
+            "advisory recommendation._"
+        )
     return "\n".join(lines)
 
 

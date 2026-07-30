@@ -18,6 +18,7 @@ from dispute_copilot.extraction.errors import (
 from dispute_copilot.extraction.evidence_extraction_models import (
     ExtractionCandidate,
     ExtractionResponse,
+    extraction_response_model_for,
 )
 from dispute_copilot.extraction.models import (
     EvidenceBundle,
@@ -46,9 +47,9 @@ from dispute_copilot.extraction.provider_response_diagnostics import (
 from dispute_copilot.policy.fact_models import FactDefinition
 
 ADAPTER_NAME = "openai_responses"
-PROMPT_VERSION = "lean-evidence-extraction/0.4.0"
+PROMPT_VERSION = "lean-evidence-extraction/0.5.0"
 VISION_PROMPT_VERSION = "source-image-description/0.2.0"
-RESPONSE_SCHEMA_VERSION = "extraction-response/0.3.0"
+RESPONSE_SCHEMA_VERSION = "extraction-response/0.4.0"
 VISION_SCHEMA_VERSION = "evidence-page-text/0.1.0"
 VISION_DESCRIPTION_INSTRUCTIONS = """\
 Describe only content directly visible in this evidence image.
@@ -147,6 +148,7 @@ class OpenAIResponsesEvidenceExtractor:
                 "type": "input_text",
                 "text": build_extraction_request(
                     requested_facts=requested_facts,
+                    evidence_bundle=evidence_bundle,
                     evidence_documents=evidence_documents,
                 ),
             }
@@ -180,6 +182,9 @@ class OpenAIResponsesEvidenceExtractor:
                 }
             )
 
+        provider_response_model = extraction_response_model_for(
+            requested_facts
+        )
         try:
             response = self.client.responses.parse(
                 model=self.settings.model,
@@ -190,7 +195,7 @@ class OpenAIResponsesEvidenceExtractor:
                         "content": content,
                     }
                 ],
-                text_format=ExtractionResponse,
+                text_format=provider_response_model,
             )
         except ValidationError as error:
             summary = format_pydantic_validation_summary(

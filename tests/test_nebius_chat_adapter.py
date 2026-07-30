@@ -22,6 +22,7 @@ from dispute_copilot.extraction.errors import (
 from dispute_copilot.extraction.evidence_extraction_models import (
     ExtractionCandidate,
     ExtractionResponse,
+    extraction_response_model_for,
 )
 from dispute_copilot.extraction.models import (
     EvidenceBundle,
@@ -218,7 +219,7 @@ def test_chat_adapter_sends_nebius_supported_schema_shape(
     assert set(json_schema) == {"name", "strict", "schema"}
     assert "schema_" not in json_schema
     assert json_schema["schema"] == (
-        ExtractionResponse.model_json_schema()
+        extraction_response_model_for(requested).model_json_schema()
     )
     messages = call["messages"]
     assert tuple(message["role"] for message in messages) == (

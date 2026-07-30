@@ -11,6 +11,9 @@ from uuid import UUID
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from dispute_copilot.analyst_review.models import AnalystReviewPackage
+from dispute_copilot.analyst_review.action_models import (
+    SuggestedAnalystAction,
+)
 from dispute_copilot.domain.case import Case
 from dispute_copilot.extraction.fact_resolution_models import (
     FactResolutionResult,
@@ -217,6 +220,7 @@ class AnalystCaseView(FrozenApplicationModel):
     execution_mode: ExecutionMode | None
     attempt: CaseExecutionAttempt | None = None
     package: AnalystReviewPackage | None = None
+    suggested_action: SuggestedAnalystAction | None = None
     resolution: FactResolutionResult | None = None
     evidence_targets: tuple[EvidenceDisplayTarget, ...] = ()
     technical_lineage: TechnicalLineage | None = None
@@ -236,7 +240,11 @@ class AnalystCaseView(FrozenApplicationModel):
                 raise ValueError(
                     "completed view requires package, resolution and lineage"
                 )
-        elif any(value is not None for value in details) or self.evidence_targets:
+        elif (
+            any(value is not None for value in details)
+            or self.suggested_action is not None
+            or self.evidence_targets
+        ):
             raise ValueError(
                 "non-completed view cannot expose prior case result details"
             )

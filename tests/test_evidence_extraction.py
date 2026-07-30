@@ -31,6 +31,7 @@ from dispute_copilot.extraction.evidence_extraction_models import (
     ExtractionResponse,
     TextExtractionEvidenceReference,
     VisualExtractionEvidenceReference,
+    extraction_response_model_for,
 )
 from dispute_copilot.extraction.openai_responses_adapter import (
     EXTRACTION_INSTRUCTIONS,
@@ -160,6 +161,7 @@ def documents(
             run_id=uuid4(),
             selection_id=uuid4(),
             policy_id="visa-13.3-test",
+            case_transaction_id="txn_scope_test",
             evidence_files=(text_file, image_file),
         ),
         (text_document, image_document),
@@ -269,12 +271,16 @@ def test_provider_receives_only_requested_evidence_facts_and_image(
     assert result == response.candidates
     assert len(responses.parse_calls) == 1
     call = responses.parse_calls[0]
-    assert call["text_format"] is ExtractionResponse
+    provider_model = call["text_format"]
+    assert provider_model.model_json_schema() == (
+        extraction_response_model_for(requested).model_json_schema()
+    )
     assert call["model"] == settings.model
     content = call["input"][0]["content"]
     assert any(item["type"] == "input_image" for item in content)
     prompt = content[0]["text"]
     assert "merchant_stated_product_description" in prompt
+    assert "txn_scope_test" in prompt
     assert '"canonical_text":' in prompt
     assert '"text":' not in prompt
 
@@ -308,6 +314,43 @@ def test_metadata_fact_is_never_sent_to_model(
         )
 
     assert responses.parse_calls == []
+
+
+def test_boolean_provider_schema_rejects_stringified_values() -> None:
+    requested = (
+        definition(
+            "merchant_recorded_first_transaction",
+            value_type="BOOLEAN",
+        ),
+    )
+    model = extraction_response_model_for(requested)
+    payload = {
+        "candidates": [
+            {
+                "fact_name": "merchant_recorded_first_transaction",
+                "status": "FOUND",
+                "values": [
+                    {
+                        "raw_value": "true",
+                        "references": [
+                            {
+                                "document_id": str(uuid4()),
+                                "file_name": "fraud-report.pdf",
+                                "page_number": 1,
+                                "evidence_type": "TEXT",
+                                "extraction_method": "NATIVE_TEXT",
+                                "supporting_text": "first transaction",
+                            }
+                        ],
+                    }
+                ],
+                "confidence": 0.9,
+            }
+        ]
+    }
+
+    with pytest.raises(ValidationError):
+        model.model_validate(payload)
 
 
 def test_model_failure_produces_typed_error(

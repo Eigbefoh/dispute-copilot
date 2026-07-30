@@ -31,10 +31,19 @@ def map_recommendation(
     created_at: datetime | None = None,
 ) -> RecommendationResult:
     """Apply exactly one manifest rule and copy causal outcomes."""
-    matches = tuple(
+    scoped_matches = tuple(
         rule
         for rule in manifest.ordered_rules
         if rule.when_overall_evaluation_status is aggregate
+        and rule.when_policy_ids
+        and evaluation.policy_id in rule.when_policy_ids
+        and evaluation.rulebook_version in rule.when_rulebook_versions
+    )
+    matches = scoped_matches or tuple(
+        rule
+        for rule in manifest.ordered_rules
+        if rule.when_overall_evaluation_status is aggregate
+        and not rule.when_policy_ids
     )
     if len(matches) != 1:
         raise MappingContractError(
@@ -42,17 +51,19 @@ def map_recommendation(
             f"{aggregate}; found {len(matches)}"
         )
     rule = matches[0]
-    causal_status = {
-        Recommendation.RECOMMEND_REPRESENT: (
-            RequirementStatus.SATISFIED
-        ),
-        Recommendation.RECOMMEND_DO_NOT_REPRESENT: (
-            RequirementStatus.NOT_SATISFIED
-        ),
-        Recommendation.INSUFFICIENT_EVIDENCE_TO_REPRESENT: (
-            RequirementStatus.NOT_ESTABLISHED
-        ),
-    }[rule.produce]
+    causal_statuses = rule.causal_requirement_statuses or (
+        {
+            Recommendation.RECOMMEND_REPRESENT: (
+                RequirementStatus.SATISFIED,
+            ),
+            Recommendation.RECOMMEND_DO_NOT_REPRESENT: (
+                RequirementStatus.NOT_SATISFIED,
+            ),
+            Recommendation.INSUFFICIENT_EVIDENCE_TO_REPRESENT: (
+                RequirementStatus.NOT_ESTABLISHED,
+            ),
+        }[rule.produce]
+    )
     causal = tuple(
         CausalRequirementResult(
             requirement_id=item.requirement_id,
@@ -61,7 +72,7 @@ def map_recommendation(
             evaluation_basis_codes=item.basis_codes,
         )
         for item in evaluation.ordered_requirement_results
-        if item.status is causal_status
+        if item.status in causal_statuses
     )
     if not causal:
         raise MappingContractError(

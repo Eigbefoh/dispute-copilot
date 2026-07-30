@@ -28,6 +28,7 @@ class EvidenceBundle(BaseModel):
     run_id: UUID
     selection_id: UUID
     policy_id: str = Field(min_length=1)
+    case_transaction_id: str | None = Field(default=None, min_length=1)
     evidence_files: tuple[EvidenceFile, ...]
 
 

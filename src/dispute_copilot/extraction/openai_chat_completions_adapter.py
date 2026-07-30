@@ -15,6 +15,7 @@ from dispute_copilot.extraction.errors import (
 from dispute_copilot.extraction.evidence_extraction_models import (
     ExtractionCandidate,
     ExtractionResponse,
+    extraction_response_model_for,
 )
 from dispute_copilot.extraction.models import (
     EvidenceBundle,
@@ -42,8 +43,8 @@ from dispute_copilot.extraction.provider_response_diagnostics import (
 from dispute_copilot.policy.fact_models import FactDefinition
 
 ADAPTER_NAME = "openai_chat_completions"
-PROMPT_VERSION = "lean-evidence-extraction/0.4.0"
-RESPONSE_SCHEMA_VERSION = "extraction-response/0.3.0"
+PROMPT_VERSION = "lean-evidence-extraction/0.5.0"
+RESPONSE_SCHEMA_VERSION = "extraction-response/0.4.0"
 MAX_TOKENS = 4096
 TEMPERATURE = 0
 
@@ -107,6 +108,7 @@ class OpenAIChatCompletionsEvidenceExtractor:
                 "type": "text",
                 "text": build_extraction_request(
                     requested_facts=requested_facts,
+                    evidence_bundle=evidence_bundle,
                     evidence_documents=evidence_documents,
                 ),
             }
@@ -142,12 +144,15 @@ class OpenAIChatCompletionsEvidenceExtractor:
                 }
             )
 
+        provider_response_model = extraction_response_model_for(
+            requested_facts
+        )
         response_format = {
             "type": "json_schema",
             "json_schema": {
-                "name": ExtractionResponse.__name__,
+                "name": provider_response_model.__name__,
                 "strict": True,
-                "schema": ExtractionResponse.model_json_schema(),
+                "schema": provider_response_model.model_json_schema(),
             },
         }
         try:

@@ -1,0 +1,959 @@
+{
+  "plan_metadata": {
+    "plan_id": "policy-accuracy-and-demo-hardening-v1",
+    "title": "Policy Accuracy and Demo Hardening Implementation Plan",
+    "version": "1.0.0",
+    "created_at": "2026-07-30",
+    "status": "PROPOSED_FOR_APPROVAL",
+    "repository": "dispute-copilot",
+    "implementation_authorized": false,
+    "target_branch": "agent/live-extraction-validation-baseline",
+    "baseline_commit": "5c83c6fed300",
+    "baseline_test_expectation": "304 passing tests before implementation begins"
+  },
+  "objective": {
+    "summary": "Correct the four known materially misleading policy behaviours, harden SQLite persistence, preserve useful failed-extraction diagnostics, clarify analyst-facing state, and add provider telemetry without changing or rewriting historical take-home-v3 policies or results.",
+    "success_state": [
+      "take-home-v3 remains byte-for-byte unchanged and all existing v3 snapshots remain readable",
+      "corrected policies are provisioned as a separate take-home-v4 rulebook",
+      "new runs can explicitly select take-home-v4 while old runs retain take-home-v3",
+      "SQLite connections enforce declared foreign keys and tolerate bounded UI concurrency",
+      "failed attempts expose bounded secret-safe diagnostics without admitting partial facts",
+      "the UI distinguishes machine workflow state, analyst state, live execution, cached results, and failed attempts",
+      "provider latency, model identity, token usage, and cost availability are persisted without storing credentials or raw evidence"
+    ]
+  },
+  "verified_baseline": {
+    "branch": "agent/live-extraction-validation-baseline",
+    "commit": "5c83c6fed300",
+    "preserved_live_results_database": {
+      "path": "data/demo-validation.db",
+      "sha256": "953842e9b43731e1635fd81d36f2aee6f4f6ca6cd756efa65c79101e870e74fc",
+      "policy_version": "take-home-v3",
+      "handling": "READ_ONLY_HISTORICAL_CHECKPOINT"
+    },
+    "known_worktree_exceptions": [
+      {
+        "path": "data/baselines/live-extraction-validation-v1/fixture-demo.db",
+        "state": "PRE_EXISTING_MODIFIED_TRACKED_FILE",
+        "rule": "Do not stage, overwrite, restore, or reconcile until Phase 2 produces a logical database diff and receives a separate approval."
+      },
+      {
+        "path": "data/live-validation.db",
+        "state": "PRE_EXISTING_UNTRACKED_DATABASE",
+        "rule": "Do not delete or commit until its contents, provenance, and retention value are audited."
+      }
+    ],
+    "current_sqlite_observation": {
+      "database": "data/demo-validation.db",
+      "foreign_keys_pragma": 0,
+      "journal_mode": "delete",
+      "declared_orphans_observed": 0
+    }
+  },
+  "non_negotiable_invariants": [
+    "Never edit files under data/rulebooks/take-home-v3.",
+    "Never update persisted v3 policy selections, fact resolutions, evaluations, recommendations, review packages, or analyst decisions.",
+    "Never rewrite data/demo-validation.db in place.",
+    "Never infer a negative fact from NOT_FOUND.",
+    "Never partially admit an invalid provider response.",
+    "Never persist API keys, authorization headers, raw provider responses, prompts containing evidence, or unbounded evidence-derived error text.",
+    "Never add case-ID-specific production logic.",
+    "Keep Gradio as a presentation layer; policy, extraction, evaluation, and recommendation logic remain in application/domain services.",
+    "Every new mutable aggregate remains immutable and append-only after insertion.",
+    "Live-provider tests and live demo runs remain explicitly gated and are not part of ordinary pytest execution."
+  ],
+  "scope": {
+    "included": [
+      "a new executable take-home-v4 rulebook with all eight policy keys and targeted corrections for Visa 13.3, Mastercard 4855, Mastercard 4859, and Visa 10.5",
+      "a policy-aware recommendation mapping manifest version 2",
+      "centralized SQLite connection configuration",
+      "additive database migrations for safe failure diagnostics and model request telemetry",
+      "database backup, integrity verification, and recovery documentation",
+      "failed-attempt diagnostic rendering",
+      "analyst state and attempt-history clarity in the existing UI",
+      "provider latency, token, model, and optional cost telemetry",
+      "unit, integration, end-to-end, UI, and migration regression tests"
+    ],
+    "excluded": [
+      "editing take-home-v3",
+      "rewriting historical results using corrected policies",
+      "automatically rerunning historical failed or completed cases",
+      "a new frontend framework or Gradio redesign",
+      "new external dispute actions",
+      "fuzzy citation matching",
+      "silent provider-output repair",
+      "production authentication and authorization",
+      "distributed workers or a message queue",
+      "automatic cost estimates without an exact versioned pricing record"
+    ]
+  },
+  "approval_gates": [
+    {
+      "gate_id": "G0",
+      "decision": "Approve this implementation plan.",
+      "required_before": "Any code, policy, database, fixture, or UI change."
+    },
+    {
+      "gate_id": "G1",
+      "decision": "Approve the source-derived take-home-v4 semantics for Visa 13.3 comparison branches and return-route alternatives.",
+      "required_before": "Importing or activating take-home-v4.",
+      "failure_action": "Keep take-home-v4 unavailable and continue using caveated take-home-v3."
+    },
+    {
+      "gate_id": "G2",
+      "decision": "Approve the proposed disposition of the modified fixture baseline and untracked live-validation database after read-only logical audits.",
+      "required_before": "Any restore, relocation, commit, or deletion of either database."
+    },
+    {
+      "gate_id": "G3",
+      "decision": "Approve promotion of take-home-v4 as a selectable demo rulebook.",
+      "required_before": "Any live run using take-home-v4.",
+      "failure_action": "Leave the application default and demo database on take-home-v3."
+    },
+    {
+      "gate_id": "G4",
+      "decision": "Approve changing the application default rulebook from take-home-v3 to take-home-v4.",
+      "required_before": "Changing any default configuration.",
+      "failure_action": "Require an explicit --rulebook-version take-home-v4 option for corrected runs."
+    }
+  ],
+  "implementation_sequence": [
+    {
+      "phase_id": "0",
+      "name": "Reconfirm and protect the baseline",
+      "priority": "MANDATORY_CHECKPOINT",
+      "changes": [
+        {
+          "action": "Run git status, record the branch and HEAD, and verify the committed live-results database checksum.",
+          "writes": "A timestamped audit report under docs/checkpoints only; no database write."
+        },
+        {
+          "action": "Run the complete non-live test suite before implementation.",
+          "command": "python -m pytest -q",
+          "continue_condition": "All baseline tests pass, or every pre-existing failure is documented and approved."
+        },
+        {
+          "action": "Record SHA-256 hashes for every file under data/rulebooks/take-home-v3 and add an immutability regression test using a checked-in manifest.",
+          "new_file": "data/checksums/take-home-v3.sha256",
+          "test": "tests/test_rulebook_v3_immutability.py"
+        },
+        {
+          "action": "Open data/demo-validation.db read-only and record schema, table counts, integrity_check, foreign_key_check, and content checksum.",
+          "rule": "Do not vacuum, checkpoint, migrate, or change journal mode on the historical database."
+        }
+      ],
+      "definition_of_done": [
+        "Baseline tests pass.",
+        "The v3 hash manifest is reproducible.",
+        "The committed live database checksum still equals 953842e9b43731e1635fd81d36f2aee6f4f6ca6cd756efa65c79101e870e74fc.",
+        "No historical file has changed."
+      ]
+    },
+    {
+      "phase_id": "1",
+      "name": "Create a corrected additive take-home-v4 policy lane",
+      "priority": "P1_POLICY_ACCURACY",
+      "principle": "All corrections are source-derived, scheme-agnostic at runtime, and isolated from v3.",
+      "new_paths": [
+        "data/rulebooks/take-home-v4/source/",
+        "data/rulebooks/take-home-v4/transcript/",
+        "data/rulebooks/take-home-v4/policies/",
+        "data/rulebooks/take-home-v4/facts/",
+        "data/rulebooks/take-home-v4/evaluation/",
+        "data/recommendation-mappings/policy-aware-representment-eligibility-v2/2.0.0/manifest.json"
+      ],
+      "shared_requirements": [
+        "Copy the source PDF and canonical transcript by content, retain their source hash, and create a new rulebook metadata record; do not link v4 policies to mutable v3 rows.",
+        "Provision all eight policy keys so catalogue coverage remains 10 of 10 cases.",
+        "Policies not named in the four corrections may be semantically equivalent to v3, but must receive new v4 policy IDs, hashes, citations, and snapshots.",
+        "Validate every required fact against the v4 fact catalogue.",
+        "Validate every exact quote against canonical transcript lines.",
+        "Reject duplicate version + scheme + reason-code keys.",
+        "Keep take-home-v3 as the application default through this phase."
+      ],
+      "policy_corrections": [
+        {
+          "case": "CB-2025-0007",
+          "policy_key": "mastercard/4855",
+          "requirement_id": "MC4855-R3",
+          "current_defect": "The v3 predicate compares the reported delivery address with billing postcode only, so a billing mismatch can produce NOT_SATISFIED even when the frozen shipping postcode matches delivery.",
+          "required_facts": [
+            "carrier_reported_delivery_address",
+            "case_recorded_shipping_postcode",
+            "case_recorded_billing_postcode"
+          ],
+          "new_fact_definitions": [],
+          "corrected_predicate": {
+            "operator": "ANY_OF",
+            "operands": [
+              {
+                "operator": "MATERIAL_ADDRESS_MATCH",
+                "fact_name": "carrier_reported_delivery_address",
+                "other_fact_name": "case_recorded_shipping_postcode",
+                "mismatch_result": "FALSE"
+              },
+              {
+                "operator": "MATERIAL_ADDRESS_MATCH",
+                "fact_name": "carrier_reported_delivery_address",
+                "other_fact_name": "case_recorded_billing_postcode",
+                "mismatch_result": "FALSE"
+              }
+            ]
+          },
+          "three_valued_rule": "If the delivery address or both cardholder addresses are unavailable, return UNKNOWN. A mismatch against one known address does not defeat a match against the other.",
+          "acceptance": [
+            "LS9 8AA delivery versus LS9 8AA shipping is TRUE even when billing is LS1 4DT.",
+            "A match to billing only can also be TRUE.",
+            "No known delivery address is UNKNOWN, never FALSE.",
+            "No case ID appears in the predicate interpreter."
+          ]
+        },
+        {
+          "case": "CB-2025-0009",
+          "policy_key": "mastercard/4859",
+          "requirement_id": "MC4859-R3",
+          "current_defect": "The exact NO-SHOW evidence value is not recognized and the late-cancellation route has no deterministic comparison against the merchant's cancellation window.",
+          "required_facts": [
+            "booking_record_reported_attendance_status",
+            "booking_record_reported_service_datetime",
+            "booking_record_reported_cancellation_datetime",
+            "merchant_stated_cancellation_window_hours"
+          ],
+          "new_fact_definitions": [
+            {
+              "fact_name": "booking_record_reported_service_datetime",
+              "value_type": "DATETIME",
+              "source_type": "EVIDENCE_TEXT_ASSERTION",
+              "cardinality": "SINGLE"
+            },
+            {
+              "fact_name": "booking_record_reported_cancellation_datetime",
+              "value_type": "DATETIME",
+              "source_type": "EVIDENCE_TEXT_ASSERTION",
+              "cardinality": "SINGLE"
+            }
+          ],
+          "new_predicate_operator": {
+            "name": "HOURS_BETWEEN_LESS_THAN",
+            "inputs": [
+              "earlier_datetime_fact_name",
+              "later_datetime_fact_name",
+              "maximum_hours_fact_name"
+            ],
+            "true_when": "Both datetimes are timezone-aware, later >= earlier, the numeric maximum is non-negative, and elapsed hours are strictly less than the maximum.",
+            "unknown_when": "Any input is NOT_FOUND, AMBIGUOUS, CONFLICTING, timezone-naive, invalid, or chronologically reversed.",
+            "false_when": "All inputs are valid and elapsed hours are greater than or equal to the maximum."
+          },
+          "corrected_predicate": {
+            "operator": "ANY_OF",
+            "operands": [
+              {
+                "operator": "FACT_IN",
+                "fact_name": "booking_record_reported_attendance_status",
+                "expected_values": [
+                  "NO-SHOW",
+                  "NO_SHOW",
+                  "NO SHOW"
+                ],
+                "comparison_normalization": "UNICODE_NFKC_TRIM_CASEFOLD_ONLY"
+              },
+              {
+                "operator": "HOURS_BETWEEN_LESS_THAN",
+                "earlier_datetime_fact_name": "booking_record_reported_cancellation_datetime",
+                "later_datetime_fact_name": "booking_record_reported_service_datetime",
+                "maximum_hours_fact_name": "merchant_stated_cancellation_window_hours"
+              }
+            ]
+          },
+          "acceptance": [
+            "An exact NO-SHOW value makes the first branch TRUE without requiring cancellation facts.",
+            "A cancellation 10 hours before service with a 24-hour window makes the second branch TRUE.",
+            "A cancellation 24 or more hours before service makes the second branch FALSE.",
+            "Missing cancellation evidence is UNKNOWN and cannot prove no cancellation.",
+            "Date-only evidence is not silently promoted to a datetime."
+          ]
+        },
+        {
+          "case": "CB-2025-0010",
+          "policy_key": "visa/10.5",
+          "scope": "Recommendation mapping, not fact extraction.",
+          "current_defect": "The global mapping treats an unestablished exception as insufficient evidence, but Visa 10.5 requires the merchant to accept liability unless the miscoding exception is affirmatively established.",
+          "mapping_manifest": {
+            "mapping_key": "policy-aware-representment-eligibility-v2",
+            "mapping_version": "2.0.0",
+            "selection_rule": "First match by exact rulebook_version and policy_id; then use the global aggregate fallback. Reject zero matches and multiple matches.",
+            "exact_policy_rules": [
+              {
+                "rulebook_version": "take-home-v4",
+                "policy_id": "visa-10.5-take-home-v4",
+                "when_requirement": "V10.5-R1",
+                "when_grade": "SATISFIED",
+                "recommendation": "RECOMMEND_REPRESENT",
+                "basis_code": "MISCODING_EXCEPTION_ESTABLISHED"
+              },
+              {
+                "rulebook_version": "take-home-v4",
+                "policy_id": "visa-10.5-take-home-v4",
+                "when_requirement": "V10.5-R1",
+                "when_grade_in": [
+                  "NOT_SATISFIED",
+                  "NOT_ESTABLISHED"
+                ],
+                "recommendation": "RECOMMEND_DO_NOT_REPRESENT",
+                "basis_code": "DEFAULT_ACCEPT_LIABILITY_UNLESS_EXCEPTION_ESTABLISHED"
+              }
+            ]
+          },
+          "three_valued_rule": "The evaluator still returns UNKNOWN for NOT_FOUND. The policy-specific recommendation mapping, not the predicate interpreter, applies the source-defined default disposition.",
+          "acceptance": [
+            "Affirmatively established miscoding recommends represent.",
+            "Unestablished or disproven miscoding recommends do not represent.",
+            "The mapping snapshot, version, and hash are frozen in RecommendationResult.",
+            "Other policies continue through explicit global fallback rules."
+          ]
+        },
+        {
+          "case": "CB-2025-0006",
+          "policy_key": "visa/13.3",
+          "requirement_ids": [
+            "V13.3-R2",
+            "V13.3-R3"
+          ],
+          "current_defects": [
+            "V13.3-R2 treats photos, specifications, visible damage, and serial evidence as universally cumulative.",
+            "V13.3-R3 combines two alternative routes.",
+            "Absence of a recorded return-request date can be misread as proof that no request occurred.",
+            "NOT_FOUND visible damage must not be presented as defect-free merchandise."
+          ],
+          "new_fact_definitions": [
+            {
+              "fact_name": "merchant_stated_item_type",
+              "value_type": "STRING",
+              "source_type": "EVIDENCE_TEXT_ASSERTION",
+              "cardinality": "SINGLE"
+            },
+            {
+              "fact_name": "merchant_stated_item_colour",
+              "value_type": "STRING",
+              "source_type": "EVIDENCE_TEXT_ASSERTION",
+              "cardinality": "SINGLE"
+            },
+            {
+              "fact_name": "merchant_stated_product_serial_number",
+              "value_type": "STRING",
+              "source_type": "EVIDENCE_TEXT_ASSERTION",
+              "cardinality": "MULTIPLE"
+            },
+            {
+              "fact_name": "merchant_reported_return_request_search_scope",
+              "value_type": "STRING",
+              "source_type": "EVIDENCE_TEXT_ASSERTION",
+              "cardinality": "SINGLE"
+            },
+            {
+              "fact_name": "merchant_reported_return_request_count",
+              "value_type": "INTEGER",
+              "source_type": "EVIDENCE_TEXT_ASSERTION",
+              "cardinality": "SINGLE"
+            }
+          ],
+          "r2_corrected_structure": {
+            "operator": "ANY_OF",
+            "branches": [
+              {
+                "branch_id": "PHOTO_ATTRIBUTE_COMPARISON",
+                "operator": "ALL_OF",
+                "operands": [
+                  {
+                    "operator": "FACT_EQUALS_FACT",
+                    "fact_name": "merchant_stated_item_type",
+                    "other_fact_name": "image_observed_item_type",
+                    "comparison_normalization": "UNICODE_NFKC_TRIM_CASEFOLD_ONLY"
+                  },
+                  {
+                    "operator": "FACT_EQUALS_FACT",
+                    "fact_name": "merchant_stated_item_colour",
+                    "other_fact_name": "image_observed_item_colour",
+                    "comparison_normalization": "UNICODE_NFKC_TRIM_CASEFOLD_ONLY"
+                  }
+                ]
+              },
+              {
+                "branch_id": "SERIAL_NUMBER_COMPARISON",
+                "operator": "FACT_SET_INTERSECTS",
+                "fact_name": "merchant_stated_product_serial_number",
+                "other_fact_name": "image_observed_serial_number",
+                "comparison_normalization": "UNICODE_NFKC_TRIM_CASEFOLD_ONLY"
+              }
+            ],
+            "explicit_exclusion": "image_observed_visible_damage is not a product-match predicate and is not used to prove absence of a hidden or structural defect.",
+            "source_semantics_gate": "G1 must confirm that either source-cited branch is independently sufficient. If the source does not establish branch sufficiency, V13.3-R2 remains NOT_ESTABLISHED and take-home-v4 is not promoted."
+          },
+          "r3_corrected_structure": {
+            "operator": "ANY_OF",
+            "branches": [
+              {
+                "branch_id": "RETURN_ROUTE_OFFERED_AND_NO_REQUEST_IN_SCOPED_RECORDS",
+                "operator": "ALL_OF",
+                "operands": [
+                  {
+                    "operator": "FACT_IS_FOUND",
+                    "fact_name": "merchant_stated_return_method"
+                  },
+                  {
+                    "operator": "FACT_IS_FOUND",
+                    "fact_name": "merchant_reported_return_request_search_scope"
+                  },
+                  {
+                    "operator": "FACT_EQUALS",
+                    "fact_name": "merchant_reported_return_request_count",
+                    "expected_value": 0
+                  }
+                ]
+              },
+              {
+                "branch_id": "POST_COMPLAINT_USE_AND_RETENTION",
+                "operator": "ALL_OF",
+                "operands": [
+                  {
+                    "operator": "FACT_IS_FOUND",
+                    "fact_name": "merchant_recorded_post_complaint_usage_date"
+                  },
+                  {
+                    "operator": "FACT_IN",
+                    "fact_name": "merchant_recorded_merchandise_retention_status",
+                    "expected_values": [
+                      "RETAINED",
+                      "STILL_RETAINED",
+                      "NOT_RETURNED"
+                    ],
+                    "comparison_normalization": "UNICODE_NFKC_TRIM_CASEFOLD_ONLY"
+                  }
+                ]
+              }
+            ]
+          },
+          "acceptance": [
+            "Visible armchair and sage-green observations remain model observations with image provenance.",
+            "A photo cannot establish absence of a hidden structural defect.",
+            "NOT_FOUND visible damage produces no negative conclusion.",
+            "The return route and post-complaint-use route are alternatives.",
+            "A missing return-request date cannot satisfy the no-request branch.",
+            "The no-request branch requires an affirmative, scoped merchant-record assertion with count zero.",
+            "No conclusion-style fact such as product_matches_listing is introduced."
+          ]
+        }
+      ],
+      "code_changes": [
+        {
+          "path": "src/dispute_copilot/evaluation/predicate_models.py",
+          "change": "Add validated, declarative FACT_EQUALS_FACT, FACT_SET_INTERSECTS, and HOURS_BETWEEN_LESS_THAN nodes. Reject incompatible fact types during policy import."
+        },
+        {
+          "path": "src/dispute_copilot/evaluation/predicate_interpreter.py",
+          "change": "Implement the new operators with explicit TRUE, FALSE, and UNKNOWN semantics and shared NFKC/trim/casefold normalization only."
+        },
+        {
+          "path": "src/dispute_copilot/recommendation/models.py",
+          "change": "Add recommendation mapping manifest schema version 2 with exact policy conditions, deterministic ordering, and overlap validation."
+        },
+        {
+          "path": "src/dispute_copilot/recommendation/service.py",
+          "change": "Select and hash the exact versioned mapping manifest; fail closed on no match, multiple matches, lineage mismatch, or hash mismatch."
+        },
+        {
+          "path": "src/dispute_copilot/policy/import_rulebook.py",
+          "change": "Validate new predicate nodes, fact types, exact citations, complete catalogue coverage, and rulebook identity."
+        }
+      ],
+      "tests": [
+        "tests/test_take_home_v4_policy_semantics.py",
+        "tests/test_v4_policy_catalogue_coverage.py",
+        "tests/test_predicate_fact_comparison.py",
+        "tests/test_predicate_hours_between.py",
+        "tests/test_policy_aware_recommendation_mapping.py",
+        "tests/test_v3_v4_result_isolation.py"
+      ],
+      "definition_of_done": [
+        "All eight v4 policies import into a fresh database.",
+        "Every v4 policy citation validates against the canonical transcript.",
+        "All ten cases have an exact v4 policy key.",
+        "The four regression cases produce the approved deterministic semantics in fixture-backed tests.",
+        "No v3 file or persisted v3 row changes.",
+        "The default rulebook remains v3 until Gate G4."
+      ]
+    },
+    {
+      "phase_id": "2",
+      "name": "Harden SQLite persistence and recovery",
+      "priority": "P2_PERSISTENCE_HARDENING",
+      "new_files": [
+        "src/dispute_copilot/repositories/sqlite_connection.py",
+        "src/dispute_copilot/repositories/migrations.py",
+        "src/dispute_copilot/repositories/maintain_database.py",
+        "migrations/0001_attempt_failure_diagnostics.sql",
+        "migrations/0002_model_request_telemetry.sql",
+        "migrations/0003_query_indexes.sql"
+      ],
+      "connection_policy": {
+        "all_connections": [
+          "PRAGMA foreign_keys = ON",
+          "PRAGMA busy_timeout = 5000"
+        ],
+        "mutable_application_databases": [
+          "Use explicit transactions.",
+          "Enable WAL only through an explicit configure command after a verified backup.",
+          "Use synchronous=NORMAL when WAL is enabled."
+        ],
+        "historical_or_cached_databases": [
+          "Open with SQLite URI mode=ro.",
+          "Do not enable WAL, migrate, checkpoint, vacuum, or alter pragmas that write."
+        ],
+        "verification": "Immediately query PRAGMA foreign_keys after opening; raise a typed repository configuration error unless it equals 1."
+      },
+      "connection_call_sites_to_migrate": [
+        "src/dispute_copilot/analyst_review/repository.py",
+        "src/dispute_copilot/application/repository.py",
+        "src/dispute_copilot/application/service.py",
+        "src/dispute_copilot/evaluation/repository.py",
+        "src/dispute_copilot/extraction/fact_resolution_repository.py",
+        "src/dispute_copilot/extraction/repository.py",
+        "src/dispute_copilot/human_review/decision_repository.py",
+        "src/dispute_copilot/policy/repository.py",
+        "src/dispute_copilot/recommendation/repository.py",
+        "src/dispute_copilot/repositories/sqlite.py"
+      ],
+      "backup_commands": {
+        "create": "python -m dispute_copilot.repositories.maintain_database backup --database data/<mutable-demo>.db --output-directory data/backups/<checkpoint-name>",
+        "verify": "python -m dispute_copilot.repositories.maintain_database verify-backup --manifest data/backups/<checkpoint-name>/manifest.json",
+        "configure_wal": "python -m dispute_copilot.repositories.maintain_database configure --database data/<mutable-demo>.db --journal-mode wal --busy-timeout-ms 5000",
+        "implementation_rule": "Use sqlite3.Connection.backup for a consistent backup. Emit a SHA-256 file and JSON manifest containing source path, created_at, integrity_check, foreign_key_check, schema version, and table counts."
+      },
+      "baseline_database_reconciliation": [
+        "Compare the working fixture-demo.db with the committed Git blob using schema hashes, ordered logical row exports, row counts, and per-table content hashes.",
+        "Compare data/live-validation.db with tracked databases using the same read-only report.",
+        "Do not include raw evidence text in the report.",
+        "Present the report for Gate G2.",
+        "If the fixture delta is accidental, restore it from HEAD only after approval.",
+        "If it contains unique intended results, export those results to a newly named checksum-labelled snapshot before restoring the historical baseline path.",
+        "Never overwrite the committed live-results checkpoint."
+      ],
+      "migration_rules": [
+        "Create schema_migrations if absent.",
+        "Apply each migration once in numeric order inside a transaction.",
+        "Record migration name, SHA-256, and applied_at.",
+        "Reject a migration whose stored hash differs from the current file.",
+        "Use foreign keys for every new child table.",
+        "Run PRAGMA integrity_check and PRAGMA foreign_key_check before and after migration.",
+        "Back up the mutable target before migration."
+      ],
+      "tests": [
+        "Every repository connection reports foreign_keys=1.",
+        "An inserted orphan in a new child table is rejected.",
+        "A second writer waits for no more than the configured busy timeout and returns a typed busy error.",
+        "WAL configuration affects only the explicitly named mutable database.",
+        "A backup verifies and can be opened read-only with identical table counts and content hashes.",
+        "Migration replay is idempotent.",
+        "Migration hash drift fails closed.",
+        "Historical data/demo-validation.db retains its original checksum."
+      ],
+      "definition_of_done": [
+        "All SQLite access uses the shared connection factory.",
+        "Declared foreign keys are enforced on every writable connection.",
+        "Mutable demo databases have a verified backup path.",
+        "Historical databases remain unchanged.",
+        "The two pre-existing worktree database exceptions have an approved disposition."
+      ]
+    },
+    {
+      "phase_id": "3",
+      "name": "Persist bounded secret-safe failed-extraction diagnostics",
+      "priority": "P3_FAILED_CASE_DIAGNOSTICS",
+      "new_domain_contract": {
+        "name": "AttemptFailureDiagnostic",
+        "frozen": true,
+        "fields": [
+          "diagnostic_id: UUID",
+          "attempt_id: UUID",
+          "created_at: timezone-aware datetime",
+          "stage: controlled execution-stage enum",
+          "exception_type: controlled or sanitized class name",
+          "items: tuple[SafeDiagnosticItem, ...] with maximum 25 entries",
+          "truncated: bool",
+          "provider: optional non-secret identifier",
+          "model: optional non-secret identifier",
+          "prompt_version: optional string",
+          "schema_version: optional string",
+          "content_hash: sha256 of canonical diagnostic payload"
+        ],
+        "safe_item_fields": [
+          "path: maximum 256 characters",
+          "error_type: maximum 96 characters",
+          "message: maximum 512 characters"
+        ]
+      },
+      "database_table": {
+        "name": "demo_case_attempt_diagnostics",
+        "columns": [
+          "diagnostic_id TEXT PRIMARY KEY",
+          "attempt_id TEXT NOT NULL",
+          "sequence INTEGER NOT NULL",
+          "created_at TEXT NOT NULL",
+          "stage TEXT NOT NULL",
+          "exception_type TEXT NOT NULL",
+          "diagnostic_json TEXT NOT NULL",
+          "content_hash TEXT NOT NULL"
+        ],
+        "constraints": [
+          "FOREIGN KEY(attempt_id) REFERENCES demo_case_attempts(attempt_id)",
+          "UNIQUE(attempt_id, sequence)"
+        ],
+        "retention": "Append-only; no raw provider response column."
+      },
+      "sanitization_policy": [
+        "Allowlist Pydantic field paths, error types, and messages.",
+        "For InvalidProviderResponseError, persist the already sanitized validation summary.",
+        "Refactor EvidenceCandidateValueError and provenance/citation exceptions to expose structured safe fields such as candidate path, fact name, document name, and page number.",
+        "Do not persist supporting_text, visual_observation, canonical page text, prompt bodies, response bodies, authorization headers, environment values, email content beyond already admitted structured facts, or filesystem paths outside the repository-relative evidence identity.",
+        "Redact bearer-token patterns, API-key patterns, URL user-info, and values matching configured secret environment variables.",
+        "Cap item count and length before persistence.",
+        "Hash the canonical sanitized payload and validate it on read."
+      ],
+      "ui_behaviour": [
+        "A failed case shows the stage, exception type, and bounded diagnostic item list.",
+        "Use labels such as candidates.0.values.0.references.0 rather than a generic EvidenceCandidateValueError when safe details exist.",
+        "Never render a raw temporary provider-response artifact in Gradio.",
+        "Switching from a failed case to another case clears all previous diagnostic items.",
+        "A failed extraction remains FAILED and creates no FactResolutionResult, evaluation, recommendation, or review package."
+      ],
+      "tests": [
+        "Diagnostics include candidate/fact/citation paths for known validation failures.",
+        "Secrets supplied through all MODEL_* variables never occur in diagnostic_json, logs, UI output, or exception repr.",
+        "Evidence text and raw provider response are absent.",
+        "More than 25 errors are truncated deterministically.",
+        "Tampered diagnostic JSON fails hash validation.",
+        "Invalid extraction still admits zero partial facts.",
+        "A failure in one batch case does not stop later cases."
+      ],
+      "definition_of_done": [
+        "Failed cases are actionable without exposing secrets or raw evidence.",
+        "Fail-closed extraction behaviour is unchanged.",
+        "Historical failed attempts remain readable with their existing generic message."
+      ]
+    },
+    {
+      "phase_id": "4",
+      "name": "Clarify analyst state and multi-attempt UI behaviour",
+      "priority": "P4_ANALYST_UI_CLARITY",
+      "visual_constraint": "Preserve the current Gradio layout and analyst workflow; add only compact state, evidence-selection, history, and status presentation changes.",
+      "application_contract_changes": [
+        {
+          "contract": "AnalystCaseView",
+          "add_fields": [
+            "package_workflow_status",
+            "effective_analyst_workflow_status",
+            "latest_analyst_decision",
+            "attempt_history"
+          ]
+        },
+        {
+          "service_method": "list_case_attempts(case_id: str) -> tuple[CaseAttemptSummary, ...]",
+          "ordering": "attempt_number descending",
+          "rule": "Results are read from persistence and never trigger extraction."
+        }
+      ],
+      "specific_ui_changes": [
+        "Display Machine package state separately from Latest analyst state.",
+        "Display the analyst decision action, decided_by, and decided_at when a decision exists.",
+        "Reject blank or placeholder analyst identities such as <analyst>, changeme, demo, or unknown. Require ANALYST_IDENTITY to be configured before a decision can be submitted.",
+        "Do not rewrite existing historical analyst identity values.",
+        "For a completed case, auto-select and render the first trusted evidence source. If no source exists but gaps do, select the first gap.",
+        "Rename Execution update to Last execution event.",
+        "Refresh Last execution event whenever the selected case changes; it must describe the selected case's latest attempt or state that no attempt exists.",
+        "Add a collapsed Attempt history table showing attempt number, execution mode, queued/started/completed timestamps, status, run ID, review-package availability, and safe failure type.",
+        "Use fixed, escaped status badge classes for NOT_RUN, QUEUED, RUNNING, COMPLETED, FAILED, LIVE, and PERSISTED/CACHED.",
+        "When switching to failed or unprocessed cases, clear recommendation, rationale, requirements, facts, citations, evidence preview, page navigation, lineage, action controls, and diagnostics before rendering the new case state.",
+        "Never accept a browser-supplied filesystem path. Resolve evidence targets only from the validated persisted review package."
+      ],
+      "tests": [
+        "Completed case A to completed case B shows only B's package, evidence, citations, and lineage.",
+        "Completed to failed clears all completed content and shows only the failed attempt.",
+        "Completed to NOT_RUN clears all persisted result content.",
+        "The first evidence target is selected automatically for a completed case.",
+        "Last execution event always names the selected case.",
+        "Attempt history is case-isolated and ordered newest first.",
+        "Machine package state does not change when an analyst decision is appended.",
+        "Effective analyst state reflects the latest immutable analyst decision.",
+        "Placeholder analyst identity cannot create a decision.",
+        "Cached package loading performs zero provider calls."
+      ],
+      "definition_of_done": [
+        "No stale cross-case content is observable.",
+        "Machine and human workflow states are unambiguous.",
+        "Completed evidence is immediately inspectable.",
+        "Repeated attempts are visible without changing immutable history.",
+        "Recommendations remain explicitly advisory."
+      ]
+    },
+    {
+      "phase_id": "5",
+      "name": "Record provider-neutral operational telemetry",
+      "priority": "P5_OPERATIONAL_TELEMETRY",
+      "new_domain_contract": {
+        "name": "ModelRequestTelemetry",
+        "frozen": true,
+        "fields": [
+          "request_id: UUID",
+          "attempt_id: UUID",
+          "run_id: optional UUID",
+          "selection_id: optional UUID",
+          "stage: DOCUMENT_VISION or FACT_EXTRACTION",
+          "provider: string",
+          "model: string",
+          "adapter: string",
+          "started_at: timezone-aware datetime",
+          "completed_at: timezone-aware datetime",
+          "latency_ms: non-negative integer",
+          "input_tokens: optional non-negative integer",
+          "output_tokens: optional non-negative integer",
+          "total_tokens: optional non-negative integer",
+          "estimated_cost: optional non-negative decimal",
+          "cost_currency: optional ISO currency code",
+          "pricing_manifest_version: optional string",
+          "response_status: SUCCEEDED or FAILED",
+          "safe_error_type: optional string",
+          "content_hash: sha256 of canonical payload"
+        ]
+      },
+      "database_table": {
+        "name": "model_request_telemetry",
+        "columns": [
+          "request_id TEXT PRIMARY KEY",
+          "attempt_id TEXT NOT NULL",
+          "run_id TEXT",
+          "selection_id TEXT",
+          "stage TEXT NOT NULL",
+          "provider TEXT NOT NULL",
+          "model TEXT NOT NULL",
+          "adapter TEXT NOT NULL",
+          "started_at TEXT NOT NULL",
+          "completed_at TEXT NOT NULL",
+          "latency_ms INTEGER NOT NULL",
+          "input_tokens INTEGER",
+          "output_tokens INTEGER",
+          "total_tokens INTEGER",
+          "estimated_cost TEXT",
+          "cost_currency TEXT",
+          "pricing_manifest_version TEXT",
+          "response_status TEXT NOT NULL",
+          "safe_error_type TEXT",
+          "content_hash TEXT NOT NULL"
+        ],
+        "constraints": [
+          "FOREIGN KEY(attempt_id) REFERENCES demo_case_attempts(attempt_id)",
+          "FOREIGN KEY(run_id) REFERENCES case_runs(run_id)",
+          "FOREIGN KEY(selection_id) REFERENCES policy_selections(selection_id)",
+          "CHECK(latency_ms >= 0)",
+          "CHECK(response_status IN ('SUCCEEDED','FAILED'))"
+        ]
+      },
+      "capture_design": [
+        "Create an in-memory ModelTelemetryCollector for each application attempt.",
+        "Pass the collector into create_extraction_runtime through a provider-neutral observer protocol.",
+        "Both document vision conversion and fact extraction report one record per external model request.",
+        "Measure latency with time.perf_counter_ns around the provider call.",
+        "For OpenAI-compatible chat completions, read prompt_tokens, completion_tokens, and total_tokens when returned.",
+        "For Responses-compatible calls, read input_tokens, output_tokens, and total_tokens when returned.",
+        "If usage is absent, persist null and display NOT REPORTED; never infer zero.",
+        "Persist failed-call telemetry with latency and safe exception type but no message or raw response.",
+        "Persist telemetry in the attempt database even when the case later fails.",
+        "Aggregate telemetry for TechnicalLineage without deleting individual request records."
+      ],
+      "cost_policy": {
+        "default": "NOT CONFIGURED",
+        "calculation_rule": "Calculate cost only when provider, model, token unit, currency, and effective date match an exact versioned local pricing manifest.",
+        "rounding": "Decimal arithmetic with manifest-declared units and rounding.",
+        "prohibited": "Do not scrape live prices during execution and do not guess a price."
+      },
+      "security_rules": [
+        "Do not store MODEL_API_KEY or any environment value.",
+        "Do not store request headers, endpoints containing credentials, prompt text, evidence text, or raw responses.",
+        "Provider and model identifiers are allowed.",
+        "Hash and validate every telemetry record."
+      ],
+      "ui_changes": [
+        "Replace NOT RECORDED with actual totals when records exist.",
+        "Display NOT REPORTED for missing provider usage.",
+        "Display NOT CONFIGURED for unavailable pricing.",
+        "Show provider, model, adapter, prompt version, schema version, request count, latency, tokens, and cost status in collapsed Technical lineage.",
+        "Label telemetry as PERSISTED when reopening a cached result."
+      ],
+      "tests": [
+        "Successful fake provider calls record latency and model identity.",
+        "Chat-completions and Responses usage shapes map correctly.",
+        "Missing usage remains null.",
+        "Failed calls persist safe telemetry without secret or evidence content.",
+        "Multiple model calls aggregate without losing per-request records.",
+        "Exact pricing manifests calculate deterministic Decimal costs.",
+        "Missing pricing displays NOT CONFIGURED.",
+        "Cached view loading makes no new telemetry records.",
+        "Telemetry from one case never appears in another case."
+      ],
+      "definition_of_done": [
+        "Every new live request has immutable provider/model/latency telemetry.",
+        "Token and cost fields are honest about unavailable data.",
+        "Technical lineage uses persisted records.",
+        "No credentials or raw evidence are persisted."
+      ]
+    },
+    {
+      "phase_id": "6",
+      "name": "Integrated validation and controlled rollout",
+      "priority": "RELEASE_GATE",
+      "validation_order": [
+        {
+          "step": "Static and schema validation",
+          "commands": [
+            "python -m json.tool docs/policy-accuracy-and-demo-hardening-implementation-plan.json",
+            "python -m dispute_copilot.policy.import_rulebook data/rulebooks/take-home-v4 --database <temporary-db>"
+          ]
+        },
+        {
+          "step": "Regression suite",
+          "command": "python -m pytest -q",
+          "expectation": "All prior tests plus new tests pass; ordinary tests make zero live-provider calls."
+        },
+        {
+          "step": "Fixture-backed ten-case validation",
+          "rulebook": "take-home-v4",
+          "expectation": "All ten cases create isolated immutable lineages; policy-sensitive expected outcomes are asserted from approved source semantics."
+        },
+        {
+          "step": "Database migration rehearsal",
+          "target": "A copy created with sqlite3.Connection.backup, never data/demo-validation.db.",
+          "expectation": "Integrity, foreign keys, content hashes, and cached package reads survive."
+        },
+        {
+          "step": "UI browser regression",
+          "expectation": "Case switching, failure diagnostics, evidence auto-selection, analyst state, attempt history, and cached loading work without callback errors."
+        },
+        {
+          "step": "Gated live-provider validation",
+          "authorization": "Separate explicit user approval required.",
+          "environment": [
+            "MODEL_PROVIDER=<provider>",
+            "MODEL_NAME=<model>",
+            "MODEL_API_KEY=<secret supplied outside repository>",
+            "MODEL_BASE_URL=<provider endpoint>"
+          ],
+          "rule": "Start with one new validation database and one case; do not mutate historical checkpoints."
+        }
+      ],
+      "rollout": [
+        "Create a new mutable database for v4 validation.",
+        "Import take-home-v4 and mapping manifest v2.",
+        "Run one policy-sensitive case with fixtures and inspect the complete persisted lineage.",
+        "After Gate G3, run one explicitly approved live case.",
+        "Run all ten cases with failure isolation only after the single case succeeds.",
+        "Keep v3 and v4 results visible as distinct attempts with rulebook labels.",
+        "Change the default version only after Gate G4."
+      ],
+      "rollback": [
+        "Disable v4 selection in configuration.",
+        "Continue opening the committed v3 database read-only.",
+        "Do not delete v4 attempts; label them failed or experimental and preserve their immutable lineage.",
+        "Restore a mutable database only from a verified backup into a new path.",
+        "Never roll back by rewriting historical rows."
+      ],
+      "definition_of_done": [
+        "All automated tests pass.",
+        "All four policy defects have direct regression tests.",
+        "v3 hashes and the historical database checksum are unchanged.",
+        "SQLite safeguards are active on mutable connections.",
+        "Failed cases show useful secret-safe diagnostics.",
+        "UI state is case-isolated and distinguishes machine, analyst, live, cached, and failure state.",
+        "New live calls record honest telemetry.",
+        "No live run or default-version promotion occurs without its approval gate."
+      ]
+    }
+  ],
+  "acceptance_matrix": [
+    {
+      "case_id": "CB-2025-0006",
+      "required_result": "No automatic defect-free conclusion; R2 follows approved alternative comparison branches; R3 follows alternative return/use branches; missing return request remains insufficient.",
+      "validation_type": "FIXTURE_REQUIRED_LIVE_GATED"
+    },
+    {
+      "case_id": "CB-2025-0007",
+      "required_result": "Delivery address matching frozen shipping postcode is not defeated by a billing-postcode mismatch.",
+      "validation_type": "DETERMINISTIC_FIXTURE_AND_UNIT"
+    },
+    {
+      "case_id": "CB-2025-0009",
+      "required_result": "Exact NO-SHOW is recognized; late cancellation uses timezone-aware deterministic arithmetic when all inputs exist.",
+      "validation_type": "DETERMINISTIC_FIXTURE_AND_UNIT"
+    },
+    {
+      "case_id": "CB-2025-0010",
+      "required_result": "The default accept-liability outcome maps to RECOMMEND_DO_NOT_REPRESENT unless the miscoding exception is affirmatively established.",
+      "validation_type": "DETERMINISTIC_FIXTURE_AND_UNIT"
+    }
+  ],
+  "risk_register": [
+    {
+      "risk": "Visa 13.3 source language may not define when one illustrative comparison branch is sufficient.",
+      "severity": "HIGH",
+      "mitigation": "Gate G1; do not invent materiality or promote v4 when source semantics remain ambiguous."
+    },
+    {
+      "risk": "New DATETIME facts for Mastercard 4859 may not be present in supplied evidence.",
+      "severity": "MEDIUM",
+      "mitigation": "Return UNKNOWN for the late-cancellation branch; allow the independently sufficient NO-SHOW branch to operate."
+    },
+    {
+      "risk": "Enabling WAL or applying migrations to a valuable historical database changes it.",
+      "severity": "HIGH",
+      "mitigation": "Historical databases are read-only. Rehearse against backup-created copies and use new mutable v4 databases."
+    },
+    {
+      "risk": "Detailed extraction errors leak evidence or secrets.",
+      "severity": "HIGH",
+      "mitigation": "Structured allowlist, bounded fields, secret redaction, content exclusions, and explicit security tests."
+    },
+    {
+      "risk": "Provider usage fields differ across adapters.",
+      "severity": "MEDIUM",
+      "mitigation": "Adapter-specific parsing into one provider-neutral contract; absent fields remain null."
+    },
+    {
+      "risk": "UI additions reintroduce stale cross-case content.",
+      "severity": "HIGH",
+      "mitigation": "One application view model, comprehensive clear-state outputs, and completed-to-failed-to-not-run browser tests."
+    }
+  ],
+  "deliverables": [
+    "Immutable v3 checksum manifest and checkpoint audit.",
+    "Executable, cited, versioned take-home-v4 rulebook with all eight policy keys.",
+    "Versioned policy-aware recommendation mapping manifest.",
+    "Shared SQLite connection and migration infrastructure.",
+    "Verified database backup and integrity commands.",
+    "Append-only safe diagnostics and model telemetry tables.",
+    "Existing Gradio UI enhanced with accurate state, evidence defaulting, attempt history, diagnostics, and telemetry.",
+    "Complete automated regression suite and gated live-validation instructions.",
+    "Final report separating code existence, automated proof, fixture proof, live proof, and unverified behaviour."
+  ],
+  "final_definition_of_done": [
+    "No historical v3 policy or result changed.",
+    "The committed v3 live-results database retains its exact checksum.",
+    "The four materially misleading behaviours are corrected only in take-home-v4 and are covered by deterministic tests.",
+    "All ten supplied cases have exact v4 policy coverage and registered facts.",
+    "All repositories enforce declared foreign keys.",
+    "Mutable demo databases have tested backup and bounded-concurrency configuration.",
+    "Failed extractions remain fail-closed and produce bounded secret-safe diagnostics.",
+    "The UI cannot display stale state from another case and clearly distinguishes package, analyst, live, cached, failed, and attempt state.",
+    "Provider identity and latency are always recorded for new live calls; tokens and cost are shown only when actually available.",
+    "The full non-live test suite passes.",
+    "Live execution and changing the default rulebook remain separate approval decisions."
+  ]
+}
