@@ -211,10 +211,16 @@ Load the local configuration:
 set -a
 source .env
 set +a
+
+# Required by the analyst-review server. Any non-empty name works.
+export ANALYST_IDENTITY=vic
+
+printenv ANALYST_IDENTITY
 ```
 
 Never commit `.env`. API keys are not written to SQLite, lineage, or normal
-logs.
+logs. Before launching the application, `printenv ANALYST_IDENTITY` should
+print `vic`, or the alternative non-empty analyst name you selected.
 
 ### 3. Launch the v4 analyst demo
 
@@ -275,6 +281,13 @@ OpenAI and Anthropic adapters are implemented and covered by the shared offline
 provider-contract tests, but they have not yet been explicitly validated
 against live OpenAI or Anthropic models.
 
+Nebius multimodal structured output was qualified live on 3 August 2026 with
+`Qwen/Qwen2.5-VL-72B-Instruct`. CB-2025-0006 completed the full pipeline,
+persisted its analyst-review package, and reopened in cached mode without
+another provider call. CB-2025-0002 also passed the repaired image transport,
+then failed closed because the model's supporting quotation was not an exact
+substring of the canonical page text. No partial fact result was admitted.
+
 The repository is designed to work with all three registered providers, but
 live model compatibility still depends on the selected model supporting image
 input and the required structured-output schema. Until the relevant live
@@ -293,7 +306,7 @@ Run the ordinary offline regression suite:
 python -m pytest -q
 ```
 
-At the current checkpoint this reports `345 passed, 1 skipped`. The skipped
+At the current checkpoint this reports `351 passed, 1 skipped`. The skipped
 test is deliberately gated because it sends evidence to the configured live
 provider and may incur cost.
 

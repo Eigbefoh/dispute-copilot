@@ -1,0 +1,502 @@
+{
+  "plan_metadata": {
+    "plan_id": "nebius-structured-vision-compatibility-v1",
+    "title": "Nebius Structured Vision Compatibility Fix",
+    "version": "1.0.0",
+    "created_at": "2026-08-03",
+    "status": "COMPLETE",
+    "implementation_authorized": true,
+    "live_provider_execution_authorized": true,
+    "current_checkpoint": "G2_COMPLETE_P5_DOCUMENTED",
+    "target_branch": "agent/live-extraction-validation-baseline",
+    "baseline_commit": "dc4b5c61d6dd1b9f7d52b48b7de5ad6203b30383",
+    "baseline_test_result": {
+      "passed": 345,
+      "failed": 0,
+      "skipped": 1,
+      "qualification": "Last verified ordinary suite before this proposed change; rerun at implementation checkpoint."
+    },
+    "observed_worktree_at_plan_creation": {
+      "modified_user_files_to_preserve": [
+        "README.md",
+        "data/v4-live-validation.db"
+      ],
+      "untracked_user_files_to_preserve": [
+        "data/demo-video-batch.db",
+        "data/nebius-new-validation.db"
+      ],
+      "plan_file": "docs/nebius-structured-vision-compatibility-implementation-plan.json",
+      "rule": "Do not stage, rewrite, migrate, delete, checksum-normalize, or otherwise alter the listed user files without separate explicit authorization."
+    },
+    "offline_implementation_result": {
+      "completed_at": "2026-08-03",
+      "live_provider_calls_performed": false,
+      "focused_test_result": {
+        "passed": 63,
+        "failed": 0,
+        "scope": "Provider vision, provider runtime, evidence extraction, and v4 case behaviour"
+      },
+      "ordinary_test_result": {
+        "passed": 351,
+        "failed": 0,
+        "skipped": 1,
+        "skipped_scope": "Explicitly gated live-provider integration test"
+      },
+      "implemented_route": "Nebius image conversion now uses strict multimodal Chat Completions JSON Schema; OpenAI Responses and Anthropic Messages remain unchanged."
+    },
+    "live_qualification_result": {
+      "completed_at": "2026-08-03",
+      "database": "data/nebius-vision-qualification-20260803.db",
+      "database_sha256": "b19659b295bdf4a639cfe347e6bb7dcb43de893957176daf291df26a88f4fa9f",
+      "provider": "nebius",
+      "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+      "vision_adapter": "openai_chat_completions",
+      "CB-2025-0002": {
+        "status": "FAILED_CLOSED_AFTER_TRANSPORT",
+        "structured_output_transport_passed": true,
+        "failure_type": "EvidenceCandidateProvenanceError",
+        "failure_summary": "The model supplied supporting text that was not an exact substring of the canonical screenshot text; no FactResolutionResult was admitted.",
+        "selection_id": "4f5c59f3-1236-4f99-9bac-cf6c9aa3f864"
+      },
+      "CB-2025-0006": {
+        "status": "COMPLETED",
+        "structured_output_transport_passed": true,
+        "selection_id": "7c8fe1f3-a503-4a04-97be-650e523d9dd4",
+        "review_package_id": "fcc6c0ed-e308-4ad9-bbc3-c0cd52ae0ab1",
+        "recommendation": "INSUFFICIENT_EVIDENCE_TO_REPRESENT",
+        "requirement_grades": {
+          "V13.3-R1": "SATISFIED",
+          "V13.3-R2": "NOT_ESTABLISHED",
+          "V13.3-R3": "NOT_ESTABLISHED"
+        },
+        "cached_reopening_verified": true,
+        "prohibited_hidden_condition_inferences_admitted": false
+      },
+      "post_live_test_result": {
+        "passed": 351,
+        "failed": 0,
+        "skipped": 1,
+        "skipped_scope": "Explicitly gated live-provider integration test"
+      },
+      "historical_baseline_hashes_unchanged": true
+    },
+    "documentation_result": {
+      "completed_at": "2026-08-03",
+      "readme_updated": true,
+      "current_system_status_updated": true,
+      "qualification_database_committed": false,
+      "qualification_database_policy": "Retained as a local untracked audit artifact pending separate explicit authorization."
+    }
+  },
+  "confirmed_diagnostic": {
+    "case_id": "CB-2025-0006",
+    "provider": "nebius",
+    "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+    "adapter": "openai_responses",
+    "endpoint": "https://api.tokenfactory.nebius.com/v1/",
+    "http_status": 400,
+    "failure_type": "StructuredOutputUnsupportedError",
+    "stage": "FACT_RESOLUTION_IMAGE_CONVERSION",
+    "provider_validation_summary": [
+      "Nebius rejected the Responses API text.format structured-output body before model inference.",
+      "The JSON-schema branch reported the required schema field as missing.",
+      "The rejected input exposed schema_ where the Nebius request validator expected schema.",
+      "The alternate ResponseFormatText branch also reported that type=json_schema was not type=text; this is a secondary union-validation consequence."
+    ],
+    "established_conclusion": "The image bytes were not evaluated by Qwen. The request failed at Nebius Responses API request validation, so this is a transport compatibility failure rather than an evidence, policy, prompt-reasoning, or downstream evaluation failure.",
+    "supporting_repository_evidence": [
+      "CB-2025-0002 and CB-2025-0006 are the supplied cases containing PNG evidence and both failed through the current structured Responses vision route.",
+      "CB-2025-0006 persisted its product-listing PDF conversion and stopped before persisting the delivery-photo EvidenceDocument.",
+      "Nebius fact extraction already uses Chat Completions JSON Schema successfully.",
+      "OpenAI and Anthropic have distinct native adapters and are not implicated by this Nebius-specific failure."
+    ]
+  },
+  "objective": {
+    "primary": "Make Nebius image conversion use its working multimodal Chat Completions JSON-schema transport while preserving the existing provider-neutral VisionObservationResult and every deterministic downstream boundary.",
+    "success_path": [
+      "Verified PNG evidence",
+      "Nebius multimodal Chat Completions request",
+      "Complete structured VisionObservationResult response",
+      "Strict local Pydantic validation",
+      "Deterministic rendering into canonical EvidencePage text",
+      "Existing evidence-fact extraction and admission",
+      "Existing deterministic evaluation and recommendation"
+    ],
+    "target_cases": [
+      "CB-2025-0002",
+      "CB-2025-0006"
+    ]
+  },
+  "scope": {
+    "included": [
+      "Add a Chat Completions-based structured vision provider reusable by the Nebius runtime.",
+      "Wire only the Nebius runtime to the new vision provider.",
+      "Reuse the existing VisionObservationResult model, prompt, deterministic renderer, image encoding, error redaction, and execution identity contracts.",
+      "Add unit and provider-contract tests for request encoding, response parsing, validation, and failure behaviour.",
+      "Add explicitly gated live qualification for the two supplied image cases after separate approval.",
+      "Update operator documentation only after live qualification establishes the final support status."
+    ],
+    "excluded": [
+      "Changes to take-home-v4 policies, facts, predicates, aggregation, recommendation mapping, or presentation rules.",
+      "Changes to CaseRun, PolicySelection, EvidenceBundle, EvidenceDocument, FactResolutionResult, evaluation, recommendation, or review-package schemas.",
+      "Changes to the native OpenAI Responses adapter.",
+      "Changes to the native Anthropic Messages adapter.",
+      "Automatic fallback from Responses to Chat Completions.",
+      "Provider or model substitution.",
+      "Unstructured image descriptions.",
+      "Silent repair, field renaming, fuzzy citation matching, partial admission, or retry loops.",
+      "Database migrations or modification of historical persisted runs.",
+      "Broad provider framework redesign."
+    ]
+  },
+  "non_negotiable_invariants": [
+    "VisionObservationResult remains the canonical image-conversion contract.",
+    "written_text_observations, visible_pixel_observations, and limitations remain separate required structured fields.",
+    "At least one limitation remains required by strict local validation.",
+    "Visible pixels cannot establish hidden condition, absence of wobble, absence of hidden damage, complete product matching, or customer return behaviour.",
+    "The provider response remains untrusted until VisionObservationResult validates locally.",
+    "An invalid or incomplete response produces no EvidenceDocument for that image and no downstream FactResolutionResult.",
+    "No alternate provider, model, endpoint, transport, or unstructured mode is attempted automatically after failure.",
+    "The existing Nebius fact-extraction adapter remains OpenAIChatCompletionsEvidenceExtractor and is not redesigned.",
+    "OpenAI remains on native Responses and Anthropic remains on native Messages.",
+    "Provider, model, adapter, prompt version, schema version, and material parameters remain recorded without credentials.",
+    "API keys remain absent from logs, exceptions, SQLite, temporary filenames, and committed files.",
+    "Existing v4 behaviour for text-only cases remains unchanged.",
+    "Existing databases and completed results are never overwritten or migrated."
+  ],
+  "target_architecture": {
+    "before": {
+      "nebius_fact_adapter": "OpenAIChatCompletionsEvidenceExtractor",
+      "nebius_vision_adapter": "OpenAIResponsesVisionProvider",
+      "failure": "Nebius Responses request validation rejects the structured vision text.format body before Qwen runs."
+    },
+    "after": {
+      "nebius_fact_adapter": "OpenAIChatCompletionsEvidenceExtractor",
+      "nebius_vision_adapter": "OpenAIChatCompletionsVisionProvider",
+      "nebius_vision_transport": "OpenAI-compatible Chat Completions with multimodal content and response_format.type=json_schema",
+      "openai_fact_and_vision_transport": "Unchanged native Responses API",
+      "anthropic_fact_and_vision_transport": "Unchanged native Messages API"
+    },
+    "provider_neutral_flow": [
+      "DocumentConverter calls VisionProvider.describe_image(file_path=...).",
+      "OpenAIChatCompletionsVisionProvider sends one admitted image and VISION_OBSERVATION_INSTRUCTIONS.",
+      "The request declares VisionObservationResult.model_json_schema() under response_format.json_schema.schema with strict=true.",
+      "The adapter retrieves exactly one assistant message containing JSON.",
+      "VisionObservationResult.model_validate_json validates the complete provider response locally.",
+      "render_vision_observations creates stable canonical page text.",
+      "The existing DocumentConverter freezes and caches the EvidenceDocument using the new provider identity."
+    ]
+  },
+  "request_contract": {
+    "transport": "client.chat.completions.create",
+    "model": "Use the exact configured MODEL_NAME without substitution.",
+    "messages": [
+      {
+        "role": "system",
+        "content": "Existing VISION_OBSERVATION_INSTRUCTIONS"
+      },
+      {
+        "role": "user",
+        "content_blocks": [
+          "A short text instruction requesting source-preserving structured observations.",
+          "One image_url data URL created from the already verified evidence file, using the existing IMAGE_DETAIL setting."
+        ]
+      }
+    ],
+    "response_format": {
+      "type": "json_schema",
+      "json_schema": {
+        "name": "VisionObservationResult",
+        "strict": true,
+        "schema": "VisionObservationResult.model_json_schema()"
+      }
+    },
+    "parameters": {
+      "temperature": 0,
+      "max_tokens": "A fixed named constant recorded in provider identity.",
+      "image_detail": "Reuse the current IMAGE_DETAIL value."
+    },
+    "prohibited_request_behaviour": [
+      "Do not use responses.parse for Nebius vision.",
+      "Do not send schema_ as a wire key.",
+      "Do not omit strict structured output.",
+      "Do not include evidence from another case.",
+      "Do not send credentials inside the body or lineage."
+    ]
+  },
+  "response_and_validation_contract": {
+    "accepted_shape": {
+      "written_text_observations": "Array of faithful visible writing; may be empty.",
+      "visible_pixel_observations": "Array of conservative visible non-text observations; may be empty.",
+      "limitations": "Non-empty array describing what the supplied view cannot establish."
+    },
+    "processing": [
+      "Require a choices list with at least one item.",
+      "Require a first choice containing an assistant message.",
+      "Reject an explicit provider refusal.",
+      "Require non-empty string content.",
+      "Parse the entire content with VisionObservationResult.model_validate_json.",
+      "Apply all existing prohibited-inference validators.",
+      "Render only after complete validation succeeds."
+    ],
+    "failure_mapping": {
+      "transport_or_timeout": "ProviderEndpointError",
+      "provider_http_rejection": "ProviderRejectionError or StructuredOutputUnsupportedError using the existing classifier",
+      "missing_choice_or_content": "InvalidProviderResponseError",
+      "invalid_json_or_schema": "InvalidProviderResponseError with sanitised Pydantic field paths",
+      "forbidden_visual_inference": "InvalidProviderResponseError derived from strict local VisionObservationResult validation"
+    },
+    "admission_rule": "No partial observations are retained. Any error aborts image conversion and prevents downstream fact admission."
+  },
+  "execution_identity_and_cache": {
+    "provider": "nebius",
+    "model": "Exact configured MODEL_NAME",
+    "adapter": "openai_chat_completions",
+    "prompt_version": "Existing VISION_PROMPT_VERSION unless the prompt itself changes during implementation review.",
+    "schema_version": "Existing VISION_SCHEMA_VERSION because the canonical schema semantics remain unchanged.",
+    "material_parameters": [
+      "image_detail",
+      "max_tokens",
+      "temperature",
+      "structured_output=chat_completions_json_schema",
+      "strict=true"
+    ],
+    "cache_safety": "Changing the adapter and structured_output identity changes converter_version, so an older Responses-generated image document cannot be mistaken for a Chat Completions conversion.",
+    "secret_rule": "No API key or authorization header is included in provider_version or converter_version."
+  },
+  "file_change_plan": [
+    {
+      "path": "src/dispute_copilot/extraction/openai_chat_completions_adapter.py",
+      "change": "Add OpenAIChatCompletionsVisionProvider beside the existing Nebius-compatible fact extractor. Reuse shared prompt, schema, image, error, and diagnostics helpers."
+    },
+    {
+      "path": "src/dispute_copilot/extraction/provider_runtime.py",
+      "change": "Wire create_nebius_runtime to OpenAIChatCompletionsVisionProvider. Leave create_openai_runtime and create_anthropic_runtime unchanged."
+    },
+    {
+      "path": "tests/test_provider_vision_contract.py",
+      "change": "Add provider-neutral semantic tests and exact Nebius Chat Completions request-body assertions, including schema rather than schema_."
+    },
+    {
+      "path": "tests/test_provider_runtime.py",
+      "change": "Assert Nebius composes Chat Completions for both facts and vision while OpenAI and Anthropic retain their current native adapters."
+    },
+    {
+      "path": "tests/test_evidence_extraction.py",
+      "change": "Add or adjust focused unit tests for valid vision parsing, refusals, missing content, invalid JSON, forbidden inference, and secret-safe failures."
+    },
+    {
+      "path": "README.md",
+      "change": "After successful live qualification only, document Nebius image support through Chat Completions and retain the honest OpenAI/Anthropic live-validation caveat."
+    },
+    {
+      "path": "docs/current-system-status.md",
+      "change": "After successful live qualification only, record the fixed transport, qualification cases, database isolation, and test results."
+    }
+  ],
+  "implementation_sequence": [
+    {
+      "phase_id": "P0",
+      "name": "Safe checkpoint",
+      "tasks": [
+        "Record current branch, HEAD, and worktree status.",
+        "Preserve the existing uncommitted README clarification, modified live database, and untracked live databases without staging or modifying them unless separately authorized.",
+        "Run the ordinary test suite and stop if it is not green.",
+        "Record checksums for protected baseline databases and confirm they are unchanged."
+      ],
+      "writes": "No production code or database writes."
+    },
+    {
+      "phase_id": "P1",
+      "name": "Offline Nebius vision adapter",
+      "tasks": [
+        "Implement OpenAIChatCompletionsVisionProvider.",
+        "Build the exact multimodal Chat Completions request.",
+        "Place the canonical schema at response_format.json_schema.schema.",
+        "Parse only complete JSON content into VisionObservationResult.",
+        "Reuse strict visual-inference validators and deterministic rendering.",
+        "Map errors through existing typed, credential-safe exceptions."
+      ],
+      "writes": "Source and focused test files only."
+    },
+    {
+      "phase_id": "P2",
+      "name": "Nebius-only runtime wiring",
+      "tasks": [
+        "Replace only create_nebius_runtime's vision provider.",
+        "Keep the Nebius fact extractor unchanged.",
+        "Verify OpenAI still uses Responses for both fact extraction and vision.",
+        "Verify Anthropic still uses Messages for both fact extraction and vision.",
+        "Verify unsupported providers still fail before evidence access."
+      ],
+      "writes": "Provider runtime composition and tests only."
+    },
+    {
+      "phase_id": "P3",
+      "name": "Offline contract and regression proof",
+      "tasks": [
+        "Run focused Nebius request-serialization tests.",
+        "Run shared provider vision-contract tests.",
+        "Run provider-runtime tests.",
+        "Run CB-2025-0006 fixture-backed behavioural tests.",
+        "Run the complete ordinary suite.",
+        "Confirm the ordinary suite makes zero provider calls."
+      ],
+      "writes": "Test artifacts only; no live databases."
+    },
+    {
+      "phase_id": "P4",
+      "name": "Explicitly approved live image qualification",
+      "authorization": "Requires separate user approval after P3 passes because it transmits evidence and may incur cost.",
+      "tasks": [
+        "Create a new isolated SQLite database; do not use or alter historical live databases.",
+        "Provision take-home-v4 into the isolated database.",
+        "Run CB-2025-0002 through the real configured Nebius pipeline.",
+        "Run CB-2025-0006 through the real configured Nebius pipeline.",
+        "Confirm both PNG EvidenceDocuments record the Chat Completions vision adapter identity.",
+        "Confirm CB-2025-0006 preserves written claims, visible pixels, and limitations as separate observations.",
+        "Confirm no hidden-condition or defect-free inference is admitted.",
+        "Confirm every successful case completes evaluation, advisory recommendation, persistence, and analyst-review assembly.",
+        "Restart in cached mode and reopen both results without another provider call."
+      ],
+      "writes": "One new disposable qualification database only."
+    },
+    {
+      "phase_id": "P5",
+      "name": "Documentation and checkpoint",
+      "tasks": [
+        "Report the exact implementation and live results without overstating provider coverage.",
+        "Update README and current-system-status only if the live qualification passed.",
+        "Record the isolated database path and checksum if the user elects to preserve it.",
+        "Do not commit a qualification database unless explicitly authorized.",
+        "Run the complete ordinary suite once more before commit."
+      ],
+      "writes": "Documentation and an explicitly approved Git checkpoint."
+    }
+  ],
+  "test_plan": {
+    "request_serialization": [
+      "The request uses chat.completions.create rather than responses.parse.",
+      "The image is sent as a verified data URL with the admitted media type.",
+      "response_format.type equals json_schema.",
+      "response_format.json_schema.name equals VisionObservationResult.",
+      "response_format.json_schema.strict is true.",
+      "response_format.json_schema.schema equals VisionObservationResult.model_json_schema().",
+      "No schema_ key occurs in the serialized provider request.",
+      "The exact configured model is used."
+    ],
+    "response_validation": [
+      "A valid three-channel response renders into stable canonical page text.",
+      "Missing limitations fails closed.",
+      "Extra fields fail closed.",
+      "Invalid JSON fails closed.",
+      "Blank or duplicate observations fail closed.",
+      "A defect-free, no-wobble, no-hidden-damage, complete-match, or return-behaviour pixel claim fails closed.",
+      "A refusal fails closed.",
+      "Missing choices, message, or content fails closed.",
+      "No invalid response produces a cached EvidenceDocument."
+    ],
+    "runtime_isolation": [
+      "Nebius facts remain OpenAIChatCompletionsEvidenceExtractor.",
+      "Nebius vision becomes OpenAIChatCompletionsVisionProvider.",
+      "OpenAI remains OpenAIResponsesEvidenceExtractor plus OpenAIResponsesVisionProvider.",
+      "Anthropic remains AnthropicMessagesEvidenceExtractor plus AnthropicMessagesVisionProvider.",
+      "No fallback or substitution path is introduced."
+    ],
+    "security": [
+      "API keys do not occur in exceptions or diagnostics.",
+      "Provider identity and converter version contain no credentials.",
+      "Raw provider output is captured only in explicit debug mode and only in a permission-restricted temporary artifact.",
+      "Normal application failures remain bounded and evidence-safe."
+    ],
+    "regression": [
+      "All existing ordinary tests pass.",
+      "Text-only Nebius cases retain their existing fixture-backed behaviour.",
+      "The v4 ten-case behavioural acceptance suite passes.",
+      "Existing persisted databases and rulebooks retain their checksums."
+    ]
+  },
+  "live_acceptance_criteria": {
+    "CB-2025-0002": [
+      "The tracking screenshot converts through Nebius Chat Completions without StructuredOutputUnsupportedError.",
+      "Written screenshot text remains a text assertion rather than a pixel-established fact.",
+      "The complete pipeline either produces a valid review package or fails for a new, precisely reported semantic reason; transport compatibility itself must be proven."
+    ],
+    "CB-2025-0006": [
+      "The delivery photograph converts through Nebius Chat Completions without StructuredOutputUnsupportedError.",
+      "The caption may be recorded only as written_text_observations.",
+      "The visible chair type, colour, and front-facing orientation may be recorded only as visible_pixel_observations.",
+      "Limitations explicitly preserve that hidden condition and non-visible properties cannot be established.",
+      "No statement claims the chair is defect-free, does not wobble, has no hidden damage, fully matches the listing, or proves customer return behaviour.",
+      "The admitted facts, deterministic requirement grades, advisory recommendation, review package, and cached reopening remain consistent with the v4 behavioural contract."
+    ],
+    "system": [
+      "No historical database is changed.",
+      "No provider fallback or model substitution occurs.",
+      "A failed case remains isolated and produces no partial downstream result.",
+      "The full ordinary suite passes after live qualification."
+    ]
+  },
+  "risks_and_controls": [
+    {
+      "risk": "Nebius Chat Completions may reject a keyword in the canonical vision schema.",
+      "control": "Capture the exact 4xx error and stop. Do not silently reduce schema semantics. Any provider-facing schema adaptation requires a separate reviewed plan while retaining full local validation."
+    },
+    {
+      "risk": "Qwen may return structurally valid but semantically prohibited visual claims.",
+      "control": "Existing VisionObservationResult validators reject the complete response; do not remove, rewrite, or partially admit observations."
+    },
+    {
+      "risk": "The new adapter could accidentally affect OpenAI or Anthropic.",
+      "control": "Wire it only in create_nebius_runtime and assert all three runtime compositions explicitly."
+    },
+    {
+      "risk": "Old image conversions could be reused under the new transport.",
+      "control": "Record a distinct adapter and structured-output parameter in provider_version so converter_version creates a separate cache key."
+    },
+    {
+      "risk": "Live qualification could alter a trusted demo database.",
+      "control": "Use a new isolated database and preserve historical checksums."
+    },
+    {
+      "risk": "Detailed diagnostics could expose credentials or evidence content.",
+      "control": "Retain bounded credential redaction and make raw-response capture explicit, temporary, local, and non-persisted."
+    }
+  ],
+  "rollback_plan": {
+    "code": "Revert the Nebius runtime wiring and the new Chat Completions vision provider as one isolated change.",
+    "data": "No migration rollback is required. Delete or retain the disposable qualification database according to user instruction; historical databases remain untouched.",
+    "behaviour_after_rollback": "Nebius image cases return to the known fail-closed StructuredOutputUnsupportedError rather than receiving altered policy outcomes."
+  },
+  "approval_gates": [
+    {
+      "gate_id": "G0",
+      "name": "Implementation plan approval",
+      "status": "APPROVED_COMPLETE",
+      "authorizes": "P0 through P3 only: checkpoint, code, offline tests, and regression verification."
+    },
+    {
+      "gate_id": "G1",
+      "name": "Live Nebius image qualification approval",
+      "status": "APPROVED_COMPLETE",
+      "authorizes": "P4 only after P3 is green; permits billable calls for CB-2025-0002 and CB-2025-0006 against a new isolated database."
+    },
+    {
+      "gate_id": "G2",
+      "name": "Documentation and commit approval",
+      "status": "APPROVED_COMPLETE",
+      "authorizes": "P5 documentation status changes and Git publication after results are reported."
+    }
+  ],
+  "definition_of_done": [
+    "Nebius image conversion no longer uses responses.parse.",
+    "The Nebius vision request uses multimodal Chat Completions with schema under response_format.json_schema.schema.",
+    "VisionObservationResult remains unchanged and is enforced locally without partial admission.",
+    "CB-2025-0002 and CB-2025-0006 no longer fail because of the confirmed Responses schema/schema_ incompatibility.",
+    "CB-2025-0006 retains the distinction between written claims, visible pixels, and unknown hidden condition.",
+    "OpenAI and Anthropic runtime behaviour remains unchanged.",
+    "No historical database, policy, recommendation, or persisted result is modified.",
+    "The complete ordinary test suite passes.",
+    "Live results are described accurately as qualified only after G1 succeeds."
+  ]
+}

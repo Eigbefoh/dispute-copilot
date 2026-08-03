@@ -26,6 +26,7 @@ from dispute_copilot.extraction.anthropic_messages_adapter import (
 )
 from dispute_copilot.extraction.openai_chat_completions_adapter import (
     OpenAIChatCompletionsEvidenceExtractor,
+    OpenAIChatCompletionsVisionProvider,
 )
 from dispute_copilot.extraction.openai_responses_adapter import (
     OpenAIResponsesEvidenceExtractor,
@@ -264,7 +265,7 @@ def test_registered_routes_use_exact_native_adapters() -> None:
     )
     assert isinstance(
         nebius_runtime.vision_provider,
-        OpenAIResponsesVisionProvider,
+        OpenAIChatCompletionsVisionProvider,
     )
     assert isinstance(
         openai_runtime.extractor,
@@ -348,6 +349,7 @@ def test_debug_diagnostics_are_explicitly_injected() -> None:
     )
 
     assert runtime.extractor.diagnostics is diagnostics
+    assert runtime.vision_provider.diagnostics is diagnostics
 
 
 def test_cli_debug_provider_response_flag_is_opt_in() -> None:

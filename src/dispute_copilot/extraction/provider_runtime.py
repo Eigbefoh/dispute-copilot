@@ -22,6 +22,7 @@ from dispute_copilot.extraction.evidence_extractor import (
 )
 from dispute_copilot.extraction.openai_chat_completions_adapter import (
     OpenAIChatCompletionsEvidenceExtractor,
+    OpenAIChatCompletionsVisionProvider,
 )
 from dispute_copilot.extraction.openai_responses_adapter import (
     OpenAIResponsesEvidenceExtractor,
@@ -76,9 +77,10 @@ def create_nebius_runtime(
             settings=effective_settings,
             diagnostics=diagnostics,
         ),
-        vision_provider=OpenAIResponsesVisionProvider(
+        vision_provider=OpenAIChatCompletionsVisionProvider(
             client=client,
             settings=effective_settings,
+            diagnostics=diagnostics,
         ),
     )
 

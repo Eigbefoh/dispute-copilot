@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from pathlib import Path
 from typing import Any
 
 from pydantic import ValidationError
@@ -26,6 +27,7 @@ from dispute_copilot.extraction.openai_adapter_common import (
     IMAGE_DETAIL,
     build_extraction_request,
     image_data_url,
+    media_type_for_image,
     provider_prefix,
     raise_provider_invocation_error,
     validate_bundle_documents,
@@ -39,6 +41,15 @@ from dispute_copilot.extraction.provider_response_diagnostics import (
     debug_artifact_note,
     format_candidate_coverage_summary,
     format_pydantic_validation_summary,
+)
+from dispute_copilot.extraction.vision_models import (
+    VISION_PROMPT_VERSION,
+    VISION_SCHEMA_VERSION,
+    VisionObservationResult,
+    render_vision_observations,
+)
+from dispute_copilot.extraction.vision_prompt import (
+    VISION_OBSERVATION_INSTRUCTIONS,
 )
 from dispute_copilot.policy.fact_models import FactDefinition
 
@@ -240,6 +251,139 @@ class OpenAIChatCompletionsEvidenceExtractor:
                 f"{debug_artifact_note(artifact_path)}"
             )
         return parsed.candidates
+
+
+class OpenAIChatCompletionsVisionProvider:
+    """Convert one image through strict Chat Completions JSON Schema."""
+
+    def __init__(
+        self,
+        *,
+        client: Any,
+        settings: ModelProviderSettings,
+        diagnostics: ProviderResponseDiagnostics | None = None,
+    ) -> None:
+        self.client = client
+        self.settings = settings
+        self.diagnostics = diagnostics or ProviderResponseDiagnostics()
+
+    @property
+    def provider_version(self) -> str:
+        identity = ModelExecutionIdentity(
+            provider=self.settings.provider,
+            model=self.settings.model,
+            adapter=ADAPTER_NAME,
+            prompt_version=VISION_PROMPT_VERSION,
+            schema_version=VISION_SCHEMA_VERSION,
+            parameters={
+                "image_detail": IMAGE_DETAIL,
+                "max_tokens": MAX_TOKENS,
+                "structured_output": (
+                    "chat_completions_json_schema"
+                ),
+                "strict": True,
+                "temperature": TEMPERATURE,
+            },
+        )
+        return identity.canonical_json()
+
+    def describe_image(self, *, file_path: Path) -> str:
+        media_type = media_type_for_image(file_path)
+        response_format = {
+            "type": "json_schema",
+            "json_schema": {
+                "name": VisionObservationResult.__name__,
+                "strict": True,
+                "schema": VisionObservationResult.model_json_schema(),
+            },
+        }
+        try:
+            response = self.client.chat.completions.create(
+                model=self.settings.model,
+                messages=[
+                    {
+                        "role": "system",
+                        "content": VISION_OBSERVATION_INSTRUCTIONS,
+                    },
+                    {
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": (
+                                    "Create the source-preserving "
+                                    "structured observations for this "
+                                    "evidence image."
+                                ),
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": image_data_url(
+                                        file_path,
+                                        media_type,
+                                    ),
+                                    "detail": IMAGE_DETAIL,
+                                },
+                            },
+                        ],
+                    },
+                ],
+                response_format=response_format,
+                max_tokens=MAX_TOKENS,
+                temperature=TEMPERATURE,
+            )
+        except Exception as error:
+            raise_provider_invocation_error(
+                operation="image description",
+                error=error,
+                settings=self.settings,
+                adapter_name=ADAPTER_NAME,
+                contract_description=(
+                    "Chat Completions multimodal and JSON-schema "
+                    "vision contract"
+                ),
+            )
+
+        message = _first_response_message(response, self.settings)
+        refusal = getattr(message, "refusal", None)
+        if refusal:
+            raise ProviderRejectionError(
+                provider_prefix(self.settings)
+                + " refused image conversion; no fallback was "
+                "attempted."
+            )
+        content_text = getattr(message, "content", None)
+        if not isinstance(content_text, str) or not content_text.strip():
+            raise InvalidProviderResponseError(
+                provider_prefix(self.settings)
+                + " returned no structured image observations; no "
+                "fallback was attempted."
+            )
+        try:
+            observations = VisionObservationResult.model_validate_json(
+                content_text
+            )
+        except ValidationError as error:
+            summary = format_pydantic_validation_summary(
+                error,
+                settings=self.settings,
+            )
+            artifact_path = capture_temporary_raw_response(
+                raw_response=content_text,
+                settings=self.settings,
+                adapter_name=ADAPTER_NAME,
+                diagnostics=self.diagnostics,
+            )
+            raise InvalidProviderResponseError(
+                provider_prefix(self.settings)
+                + " image observations were rejected by the "
+                "untrusted vision schema.\n"
+                "Validation errors:\n"
+                f"{summary}"
+                f"{debug_artifact_note(artifact_path)}"
+            ) from error
+        return render_vision_observations(observations)
 
 
 def _first_response_message(

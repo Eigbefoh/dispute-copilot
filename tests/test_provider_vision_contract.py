@@ -16,9 +16,16 @@ from dispute_copilot.extraction.anthropic_messages_adapter import (
 )
 from dispute_copilot.extraction.errors import (
     InvalidProviderResponseError,
+    ProviderRejectionError,
+)
+from dispute_copilot.extraction.openai_chat_completions_adapter import (
+    OpenAIChatCompletionsVisionProvider,
 )
 from dispute_copilot.extraction.openai_responses_adapter import (
     OpenAIResponsesVisionProvider,
+)
+from dispute_copilot.extraction.provider_response_diagnostics import (
+    ProviderResponseDiagnostics,
 )
 from dispute_copilot.extraction.vision_models import (
     VisionObservationResult,
@@ -38,6 +45,31 @@ class RecordingResponses:
     def parse(self, **kwargs: object) -> SimpleNamespace:
         self.calls.append(kwargs)
         return SimpleNamespace(output_parsed=self.parsed)
+
+
+class RecordingChatCompletions:
+    def __init__(
+        self,
+        text: str | None,
+        *,
+        refusal: str | None = None,
+    ) -> None:
+        self.text = text
+        self.refusal = refusal
+        self.calls: list[dict[str, object]] = []
+
+    def create(self, **kwargs: object) -> SimpleNamespace:
+        self.calls.append(kwargs)
+        return SimpleNamespace(
+            choices=[
+                SimpleNamespace(
+                    message=SimpleNamespace(
+                        content=self.text,
+                        refusal=self.refusal,
+                    )
+                )
+            ]
+        )
 
 
 class RecordingMessages:
@@ -82,14 +114,20 @@ def test_cb_0006_image_preserves_three_channels_for_every_provider() -> None:
             "cannot be established.",
         ),
     )
-    nebius_responses = RecordingResponses(observations)
+    nebius_completions = RecordingChatCompletions(
+        observations.model_dump_json()
+    )
     openai_responses = RecordingResponses(observations)
     anthropic_messages = RecordingMessages(
         observations.model_dump_json()
     )
     providers = (
-        OpenAIResponsesVisionProvider(
-            client=SimpleNamespace(responses=nebius_responses),
+        OpenAIChatCompletionsVisionProvider(
+            client=SimpleNamespace(
+                chat=SimpleNamespace(
+                    completions=nebius_completions
+                )
+            ),
             settings=_settings("nebius"),
         ),
         OpenAIResponsesVisionProvider(
@@ -109,6 +147,12 @@ def test_cb_0006_image_preserves_three_channels_for_every_provider() -> None:
 
     expected = render_vision_observations(observations)
     assert rendered == (expected, expected, expected)
+    nebius_identity = json.loads(providers[0].provider_version)
+    assert nebius_identity["provider"] == "nebius"
+    assert nebius_identity["adapter"] == "openai_chat_completions"
+    assert nebius_identity["parameters"]["structured_output"] == (
+        "chat_completions_json_schema"
+    )
     payload = json.loads(expected)
     assert payload["written_text_observations"] == [
         "Carlton Armchair (Sage) — delivered 18 Apr 2025"
@@ -128,15 +172,32 @@ def test_cb_0006_image_preserves_three_channels_for_every_provider() -> None:
         for phrase in forbidden
     )
 
-    for call in (
-        nebius_responses.calls[0],
-        openai_responses.calls[0],
-    ):
-        assert call["text_format"] is VisionObservationResult
-        instructions = str(call["instructions"]).lower()
-        assert "written_text_observations" in instructions
-        assert "visible_pixel_observations" in instructions
-        assert "limitations" in instructions
+    nebius_call = nebius_completions.calls[0]
+    response_format = nebius_call["response_format"]
+    assert response_format["type"] == "json_schema"
+    assert response_format["json_schema"]["strict"] is True
+    assert response_format["json_schema"]["schema"] == (
+        VisionObservationResult.model_json_schema()
+    )
+    assert "schema_" not in response_format["json_schema"]
+    nebius_instructions = str(
+        nebius_call["messages"][0]["content"]
+    ).lower()
+    assert "written_text_observations" in nebius_instructions
+    assert "visible_pixel_observations" in nebius_instructions
+    assert "limitations" in nebius_instructions
+    image_block = nebius_call["messages"][1]["content"][1]
+    assert image_block["type"] == "image_url"
+    assert image_block["image_url"]["url"].startswith(
+        "data:image/png;base64,"
+    )
+
+    openai_call = openai_responses.calls[0]
+    assert openai_call["text_format"] is VisionObservationResult
+    openai_instructions = str(openai_call["instructions"]).lower()
+    assert "written_text_observations" in openai_instructions
+    assert "visible_pixel_observations" in openai_instructions
+    assert "limitations" in openai_instructions
     anthropic_call = anthropic_messages.calls[0]
     assert (
         anthropic_call["output_config"]["format"]["schema"]
@@ -241,6 +302,71 @@ def test_openai_sdk_serializes_shared_vision_schema() -> None:
     assert "schema_" not in response_format
 
 
+def test_nebius_sdk_serializes_chat_completions_vision_schema() -> None:
+    observations = VisionObservationResult(
+        written_text_observations=("Delivered 18 Apr 2025",),
+        visible_pixel_observations=(
+            "A front-facing sage armchair is visible.",
+        ),
+        limitations=("Only a front view is visible.",),
+    )
+    captured_body: dict[str, object] = {}
+
+    def handle_request(request: httpx.Request) -> httpx.Response:
+        captured_body.update(json.loads(request.content))
+        return httpx.Response(
+            200,
+            json={
+                "id": "chatcmpl_test",
+                "object": "chat.completion",
+                "created": 1,
+                "model": "nebius-vision-model",
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": observations.model_dump_json(),
+                            "refusal": None,
+                        },
+                        "finish_reason": "stop",
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": 1,
+                    "completion_tokens": 1,
+                    "total_tokens": 2,
+                },
+            },
+        )
+
+    client = OpenAI(
+        api_key="test-only-nebius-token",
+        base_url="https://api.tokenfactory.nebius.com/v1/",
+        http_client=httpx.Client(
+            transport=httpx.MockTransport(handle_request)
+        ),
+    )
+    provider = OpenAIChatCompletionsVisionProvider(
+        client=client,
+        settings=_settings("nebius"),
+    )
+
+    result = provider.describe_image(file_path=CHAIR_IMAGE)
+
+    assert result == render_vision_observations(observations)
+    response_format = captured_body["response_format"]
+    assert response_format["type"] == "json_schema"
+    json_schema = response_format["json_schema"]
+    assert json_schema["strict"] is True
+    assert json_schema["schema"] == (
+        VisionObservationResult.model_json_schema()
+    )
+    assert "schema_" not in json_schema
+    messages = captured_body["messages"]
+    assert messages[1]["content"][1]["type"] == "image_url"
+
+
 @pytest.mark.parametrize(
     "invalid",
     [
@@ -263,9 +389,13 @@ def test_invalid_visual_semantics_fail_without_document_output(
     invalid: dict[str, object],
 ) -> None:
     providers = (
-        OpenAIResponsesVisionProvider(
+        OpenAIChatCompletionsVisionProvider(
             client=SimpleNamespace(
-                responses=RecordingResponses(invalid)
+                chat=SimpleNamespace(
+                    completions=RecordingChatCompletions(
+                        json.dumps(invalid)
+                    )
+                )
             ),
             settings=_settings("nebius"),
         ),
@@ -286,3 +416,111 @@ def test_invalid_visual_semantics_fail_without_document_output(
     for provider in providers:
         with pytest.raises(InvalidProviderResponseError):
             provider.describe_image(file_path=CHAIR_IMAGE)
+
+
+def test_nebius_vision_refusal_fails_without_fallback() -> None:
+    completions = RecordingChatCompletions(
+        None,
+        refusal="I cannot process this image.",
+    )
+    provider = OpenAIChatCompletionsVisionProvider(
+        client=SimpleNamespace(
+            chat=SimpleNamespace(completions=completions)
+        ),
+        settings=_settings("nebius"),
+    )
+
+    with pytest.raises(
+        ProviderRejectionError,
+        match="refused image conversion",
+    ):
+        provider.describe_image(file_path=CHAIR_IMAGE)
+
+    assert len(completions.calls) == 1
+
+
+@pytest.mark.parametrize(
+    ("response", "message"),
+    [
+        (
+            SimpleNamespace(choices=[]),
+            "no Chat Completions choices",
+        ),
+        (
+            SimpleNamespace(
+                choices=[SimpleNamespace(message=None)]
+            ),
+            "choice without a message",
+        ),
+    ],
+)
+def test_nebius_vision_missing_response_structure_fails_closed(
+    response: SimpleNamespace,
+    message: str,
+) -> None:
+    provider = OpenAIChatCompletionsVisionProvider(
+        client=SimpleNamespace(
+            chat=SimpleNamespace(
+                completions=SimpleNamespace(
+                    create=lambda **_: response
+                )
+            )
+        ),
+        settings=_settings("nebius"),
+    )
+
+    with pytest.raises(InvalidProviderResponseError, match=message):
+        provider.describe_image(file_path=CHAIR_IMAGE)
+
+
+def test_nebius_vision_missing_content_fails_closed() -> None:
+    completions = RecordingChatCompletions(None)
+    provider = OpenAIChatCompletionsVisionProvider(
+        client=SimpleNamespace(
+            chat=SimpleNamespace(completions=completions)
+        ),
+        settings=_settings("nebius"),
+    )
+
+    with pytest.raises(
+        InvalidProviderResponseError,
+        match="no structured image observations",
+    ):
+        provider.describe_image(file_path=CHAIR_IMAGE)
+
+
+def test_nebius_vision_invalid_response_debug_artifact_is_secret_safe(
+    tmp_path: Path,
+) -> None:
+    secret = "nebius-test-token"
+    completions = RecordingChatCompletions(
+        json.dumps(
+            {
+                "written_text_observations": [],
+                "visible_pixel_observations": [],
+                "limitations": [],
+                "provider_note": secret,
+            }
+        )
+    )
+    provider = OpenAIChatCompletionsVisionProvider(
+        client=SimpleNamespace(
+            chat=SimpleNamespace(completions=completions)
+        ),
+        settings=_settings("nebius"),
+        diagnostics=ProviderResponseDiagnostics(
+            capture_raw_response=True,
+            temporary_directory=tmp_path,
+        ),
+    )
+
+    with pytest.raises(InvalidProviderResponseError) as caught:
+        provider.describe_image(file_path=CHAIR_IMAGE)
+
+    message = str(caught.value)
+    assert secret not in message
+    artifacts = tuple(tmp_path.glob("*.json"))
+    assert len(artifacts) == 1
+    artifact_text = artifacts[0].read_text(encoding="utf-8")
+    assert secret not in artifact_text
+    assert "[REDACTED]" in artifact_text

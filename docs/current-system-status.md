@@ -1,6 +1,6 @@
 # Dispute Copilot — Current System Status
 
-Last updated: 30 July 2026
+Last updated: 3 August 2026
 
 ## Executive status
 
@@ -35,24 +35,40 @@ separate three-case qualification packs succeed.
 
 Current qualification status for the amended three-provider contract:
 
-- Nebius: `IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED` for the new
-  three-case qualification standard; earlier persisted Nebius results remain
-  valid historical executions.
+- Nebius: `LIVE_VALIDATED_FOR_STRUCTURED_IMAGE_TRANSPORT` using
+  `Qwen/Qwen2.5-VL-72B-Instruct`. The broader three-case semantic
+  qualification standard remains incomplete.
 - OpenAI: `IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED`.
 - Anthropic: `IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED`.
 
-The first live CB-2025-0006 attempt completed and cached the Nebius image
-description, then failed because Nebius rejected Responses JSON-schema
-serialization. A second attempt reached Chat Completions and received provider
-output, but that output failed the untrusted `ExtractionResponse` schema. No
-fact result was admitted. A diagnostic-enabled retry showed that the model
-mixed text and visual fields within individual provenance references. After
-that contract was strengthened, the next live response passed the provider
-schema but failed deterministic citation validation because a
-`supporting_text` value was not copied from the canonical converted page text.
-No fact result was admitted in those failed attempts. A subsequent live retry
-passed all extraction and citation validation and reached
-`READY_FOR_EVALUATION` with all ten Visa 13.3 facts accounted for.
+The Nebius vision route now uses multimodal Chat Completions with strict JSON
+Schema instead of the incompatible Responses structured-output request. Its
+wire contract places the schema under `response_format.json_schema.schema`.
+There is no alternate transport or unstructured fallback.
+
+Live qualification used a new isolated database and did not modify historical
+results. CB-2025-0006 completed intake, policy selection, image conversion,
+fact admission, deterministic evaluation, recommendation, review-package
+assembly, persistence, and cached reopening. Its recommendation was
+`INSUFFICIENT_EVIDENCE_TO_REPRESENT`; V13.3-R1 was `SATISFIED`, while R2 and R3
+were `NOT_ESTABLISHED`. No claim that the chair was defect-free, did not
+wobble, had no hidden damage, or fully matched the listing was admitted.
+
+CB-2025-0002 passed the repaired image transport but failed closed at exact
+citation validation: the model supplied supporting text that was not an exact
+substring of the canonical screenshot text. No `FactResolutionResult` was
+persisted for that failed selection. This is a semantic provenance failure,
+not a transport incompatibility.
+
+Qualification artifact:
+
+```text
+Database: data/nebius-vision-qualification-20260803.db
+SHA-256: b19659b295bdf4a639cfe347e6bb7dcb43de893957176daf291df26a88f4fa9f
+```
+
+The qualification database is a local, untracked audit artifact unless the
+user separately authorises preserving it in Git.
 
 ## Completed milestones
 
@@ -154,8 +170,10 @@ rulebook_version + scheme + reason_code
 
 - Live inference is composed through an explicit provider registry.
 - Registered providers are exactly `nebius`, `openai`, and `anthropic`.
-- Nebius evidence extraction uses `OpenAIChatCompletions` with an explicit
-  strict JSON schema.
+- Nebius fact extraction uses `OpenAIChatCompletions` with an explicit strict
+  JSON schema.
+- Nebius image conversion uses multimodal Chat Completions with the same
+  strict, provider-neutral `VisionObservationResult` contract.
 - OpenAI uses the native Responses adapter.
 - Anthropic uses the native Messages adapter, exact
   `output_config.format` JSON Schema, and base64 image blocks.
@@ -173,8 +191,10 @@ rulebook_version + scheme + reason_code
 MODEL_PROVIDER
 MODEL_NAME
 MODEL_API_KEY
-MODEL_BASE_URL
 ```
+
+`MODEL_BASE_URL` is optional. When omitted, the registered provider endpoint
+is used. When supplied, it must be a credential-free HTTP(S) URL.
 
 - Nebius has this registered base URL:
 
@@ -396,10 +416,10 @@ All ten are evidence facts. The current Visa 13.3 policy requests no
 
 ## Verification status
 
-Latest full test result:
+Latest full test result after live Nebius image qualification:
 
 ```text
-345 passed
+351 passed
 1 skipped
 ```
 
@@ -432,6 +452,10 @@ Additional verification:
   wording.
 - CB-2025-0006 image-contract tests preserve written claims, pixel
   observations, and view limitations as separate fields.
+- Live CB-2025-0006 qualification completed through analyst-review packaging
+  and reopened in `CACHED_VIEW` without another provider call.
+- Live CB-2025-0002 qualification proved the repaired image transport and then
+  failed closed at exact citation validation with zero partial fact results.
 - Diagnostic tests verify field-level error summaries, exact requested-fact
   coverage, credential redaction, restricted temporary-file permissions, and
   the absence of raw artifacts in normal mode.
@@ -524,7 +548,8 @@ evidence access.
 
 ## Recommended next milestone
 
-After explicit billable-run approval and secure credentials are available,
-run the isolated CB-2025-0004, CB-2025-0006, and CB-2025-0007 qualification
-pack separately for each provider. Until then, the honest provider status is
-`IMPLEMENTED_AND_CONTRACT_TESTED_NOT_LIVE_VALIDATED`.
+For broader semantic qualification, run the isolated CB-2025-0004,
+CB-2025-0006, and CB-2025-0007 pack separately for each provider after
+explicit billable-run approval. Nebius structured image transport is now live
+validated, but the full three-case Nebius semantic pack and both OpenAI and
+Anthropic live qualifications remain outstanding.

@@ -93,12 +93,17 @@ class FakeClient:
 def provider_settings(
     *,
     model: str = "user-selected-nebius-model",
+    provider: str = "nebius",
 ) -> ModelProviderSettings:
+    base_urls = {
+        "nebius": "https://api.tokenfactory.nebius.com/v1/",
+        "openai": "https://api.openai.com/v1/",
+    }
     return ModelProviderSettings(
-        provider="nebius",
+        provider=provider,
         api_key="test-only-nebius-token",
         model=model,
-        base_url="https://api.tokenfactory.nebius.com/v1/",
+        base_url=base_urls[provider],
     )
 
 
@@ -539,7 +544,9 @@ def test_malformed_provider_response_fails_closed(
         )
 
 
-def test_same_model_client_can_describe_image(tmp_path: Path) -> None:
+def test_openai_responses_client_can_describe_image(
+    tmp_path: Path,
+) -> None:
     image_path = tmp_path / "photo.png"
     image_path.write_bytes(b"image")
     observations = VisionObservationResult(
@@ -557,7 +564,10 @@ def test_same_model_client_can_describe_image(tmp_path: Path) -> None:
     responses = FakeResponses(parsed=observations)
     provider = OpenAIResponsesVisionProvider(
         client=FakeClient(responses),
-        settings=provider_settings(),
+        settings=provider_settings(
+            provider="openai",
+            model="user-selected-openai-model",
+        ),
     )
 
     assert provider.describe_image(file_path=image_path) == (
@@ -567,8 +577,8 @@ def test_same_model_client_can_describe_image(tmp_path: Path) -> None:
     call = responses.parse_calls[0]
     assert call["text_format"] is VisionObservationResult
     identity = json.loads(provider.provider_version)
-    assert identity["provider"] == "nebius"
-    assert identity["model"] == "user-selected-nebius-model"
+    assert identity["provider"] == "openai"
+    assert identity["model"] == "user-selected-openai-model"
     assert identity["adapter"] == "openai_responses"
     assert identity["prompt_version"] == VISION_PROMPT_VERSION
     assert identity["schema_version"] == VISION_SCHEMA_VERSION
@@ -593,7 +603,10 @@ def test_image_description_fails_closed_on_invalid_observations(
     )
     provider = OpenAIResponsesVisionProvider(
         client=FakeClient(responses),
-        settings=provider_settings(),
+        settings=provider_settings(
+            provider="openai",
+            model="user-selected-openai-model",
+        ),
     )
 
     with pytest.raises(
