@@ -636,6 +636,10 @@ def test_untrusted_schema_has_no_evaluation_fields() -> None:
     )
     assert "two separate references" in normalized_instructions
     assert "copied exclusively and verbatim" in normalized_instructions
+    assert "one contiguous substring" in normalized_instructions
+    assert "non-contiguous passages" in normalized_instructions
+    assert "separate TEXT reference" in normalized_instructions
+    assert "First product, Second product" in EXTRACTION_INSTRUCTIONS
     assert "do not independently transcribe" in (
         normalized_instructions.lower()
     )
@@ -665,6 +669,8 @@ def test_provider_schema_discriminates_text_and_visual_references() -> None:
     assert "copied exclusively" in supporting_text_description
     assert "canonical_text" in supporting_text_description
     assert "independently transcribed" in supporting_text_description
+    assert "contiguous substring" in supporting_text_description
+    assert "multiple references" in supporting_text_description
 
 
 def test_text_printed_inside_png_remains_text_provenance(
@@ -785,6 +791,200 @@ def test_citation_failure_reports_precise_safe_context(
     assert f"rejected_supporting_text={rejected_text!r}" in diagnostic
     assert "canonical_page_text_empty=False" in diagnostic
     assert "Product: Carlton Armchair" not in diagnostic
+
+
+def test_non_contiguous_invoice_passages_use_separate_exact_references(
+    tmp_path: Path,
+) -> None:
+    document = EvidenceDocument(
+        document_id=uuid4(),
+        file_name="invoice.pdf",
+        source_sha256="c" * 64,
+        media_type="application/pdf",
+        pages=(
+            EvidencePage(
+                page_number=1,
+                text=(
+                    "Single Origin Ethiopia Yirgacheffe 250g\n"
+                    "House Espresso Blend 1kg"
+                ),
+                extraction_method=ExtractionMethod.NATIVE_TEXT,
+            ),
+        ),
+        converter_version="test/native-text",
+        created_at=datetime.now(timezone.utc),
+    )
+    references = tuple(
+        TextExtractionEvidenceReference(
+            evidence_type="TEXT",
+            document_id=document.document_id,
+            file_name=document.file_name,
+            page_number=1,
+            extraction_method="NATIVE_TEXT",
+            supporting_text=text,
+        )
+        for text in (
+            "Single Origin Ethiopia Yirgacheffe 250g",
+            "House Espresso Blend 1kg",
+        )
+    )
+    requested = (
+        definition("merchant_stated_first_purchase_description"),
+    )
+    provider_candidate = ExtractionCandidate(
+        fact_name=requested[0].fact_name,
+        status="FOUND",
+        values=(
+            ExtractionCandidateValue(
+                raw_value=(
+                    "Single Origin Ethiopia Yirgacheffe 250g; "
+                    "House Espresso Blend 1kg"
+                ),
+                references=references,
+            ),
+        ),
+        confidence=0.9,
+    )
+
+    resolved = to_resolved_facts(
+        provider_candidates=(provider_candidate,),
+        requested_facts=requested,
+        evidence_documents=(document,),
+    )
+
+    assert tuple(
+        provenance.supporting_text
+        for provenance in resolved[0].resolved_values[0].provenance
+    ) == (
+        "Single Origin Ethiopia Yirgacheffe 250g",
+        "House Espresso Blend 1kg",
+    )
+
+
+def test_synthesized_invoice_quotation_remains_rejected(
+    tmp_path: Path,
+) -> None:
+    document = EvidenceDocument(
+        document_id=uuid4(),
+        file_name="invoice.pdf",
+        source_sha256="d" * 64,
+        media_type="application/pdf",
+        pages=(
+            EvidencePage(
+                page_number=1,
+                text=(
+                    "Single Origin Ethiopia Yirgacheffe 250g\n"
+                    "House Espresso Blend 1kg"
+                ),
+                extraction_method=ExtractionMethod.NATIVE_TEXT,
+            ),
+        ),
+        converter_version="test/native-text",
+        created_at=datetime.now(timezone.utc),
+    )
+    synthesized = (
+        "Single Origin Ethiopia Yirgacheffe 250g, "
+        "House Espresso Blend 1kg"
+    )
+    requested = (
+        definition("merchant_stated_first_purchase_description"),
+    )
+
+    with pytest.raises(
+        EvidenceCandidateProvenanceError,
+        match=r"candidates\.0\.values\.0\.references\.0",
+    ):
+        to_resolved_facts(
+            provider_candidates=(
+                candidate(
+                    requested[0].fact_name,
+                    raw_value=synthesized,
+                    evidence_reference=TextExtractionEvidenceReference(
+                        evidence_type="TEXT",
+                        document_id=document.document_id,
+                        file_name=document.file_name,
+                        page_number=1,
+                        extraction_method="NATIVE_TEXT",
+                        supporting_text=synthesized,
+                    ),
+                ),
+            ),
+            requested_facts=requested,
+            evidence_documents=(document,),
+        )
+
+
+def test_structured_image_address_uses_separate_exact_references() -> None:
+    page_text = render_vision_observations(
+        VisionObservationResult(
+            written_text_observations=(
+                "Deliver to:",
+                "Lumatech Customer",
+                "Flat 14, 7 Aspen Wharf",
+                "Manchester M1 7DR",
+            ),
+            visible_pixel_observations=(),
+            limitations=(
+                "The screenshot cannot establish physical receipt.",
+            ),
+        )
+    )
+    document = EvidenceDocument(
+        document_id=uuid4(),
+        file_name="tracking_screenshot.png",
+        source_sha256="e" * 64,
+        media_type="image/png",
+        pages=(
+            EvidencePage(
+                page_number=1,
+                text=page_text,
+                extraction_method=ExtractionMethod.VISION,
+                image_width=800,
+                image_height=600,
+            ),
+        ),
+        converter_version="test/structured-vision",
+        created_at=datetime.now(timezone.utc),
+    )
+    references = tuple(
+        TextExtractionEvidenceReference(
+            evidence_type="TEXT",
+            document_id=document.document_id,
+            file_name=document.file_name,
+            page_number=1,
+            extraction_method="VISION",
+            supporting_text=text,
+        )
+        for text in (
+            "Flat 14, 7 Aspen Wharf",
+            "Manchester M1 7DR",
+        )
+    )
+    requested = (
+        definition(
+            "carrier_reported_delivery_address",
+            value_type="ADDRESS",
+        ),
+    )
+    provider_candidate = ExtractionCandidate(
+        fact_name=requested[0].fact_name,
+        status="FOUND",
+        values=(
+            ExtractionCandidateValue(
+                raw_value="Flat 14, 7 Aspen Wharf, Manchester M1 7DR",
+                references=references,
+            ),
+        ),
+        confidence=0.9,
+    )
+
+    resolved = to_resolved_facts(
+        provider_candidates=(provider_candidate,),
+        requested_facts=requested,
+        evidence_documents=(document,),
+    )
+
+    assert len(resolved[0].resolved_values[0].provenance) == 2
 
 
 def test_untrusted_schema_forbids_extra_fields() -> None:

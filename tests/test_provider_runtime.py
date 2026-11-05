@@ -304,6 +304,9 @@ def test_registered_routes_use_exact_native_adapters() -> None:
     for field in ("prompt_version", "schema_version"):
         assert nebius_identity[field] == openai_identity[field]
         assert nebius_identity[field] == anthropic_identity[field]
+    assert nebius_identity["prompt_version"] == (
+        "lean-evidence-extraction/0.6.0"
+    )
     assert "test-token" not in json.dumps(
         (nebius_identity, openai_identity, anthropic_identity)
     )

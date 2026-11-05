@@ -221,6 +221,18 @@ def test_all_ten_cases_match_the_approved_v4_behaviour(
         for item in case_six.suggested_action.requested_items
     )
 
+    case_five = application.get_case_view("CB-2025-0005")
+    first_description_sources = tuple(
+        source.supporting_content
+        for source in case_five.package.supporting_sources
+        if source.fact_name
+        == "merchant_stated_first_purchase_description"
+    )
+    assert first_description_sources == (
+        "Single Origin Ethiopia Yirgacheffe 250g",
+        "House Espresso Blend 1kg",
+    )
+
     case_seven = application.get_case_view("CB-2025-0007")
     delivery_source = next(
         source
@@ -302,7 +314,6 @@ def _populate(
         values = (
             ("merchant_recorded_first_purchase_id", "RL-ORDER-44188", first, "RL-ORDER-44188"),
             ("merchant_recorded_second_purchase_id", "RL-ORDER-44192", second, "RL-ORDER-44192"),
-            ("merchant_stated_first_purchase_description", "Coffee products", first, "Ethiopia Yirgacheffe"),
             ("merchant_stated_second_purchase_description", "Aeropress starter kit", second, "Aeropress Go starter kit"),
             ("merchant_recorded_first_purchase_document_id", "RL-88291", first, "Invoice #RL-88291"),
             ("merchant_recorded_second_purchase_document_id", "RL-88294", second, "Invoice #RL-88294"),
@@ -315,6 +326,23 @@ def _populate(
         )
         for item in values:
             _put(candidates, *item)
+        candidates[
+            "merchant_stated_first_purchase_description"
+        ] = _found_with_references(
+            "merchant_stated_first_purchase_description",
+            (
+                "Single Origin Ethiopia Yirgacheffe 250g; "
+                "House Espresso Blend 1kg"
+            ),
+            (
+                _text(
+                    first,
+                    "Single Origin Ethiopia Yirgacheffe 250g",
+                    1,
+                ),
+                _text(first, "House Espresso Blend 1kg", 1),
+            ),
+        )
         return
     if case_id == "CB-2025-0006":
         listing = documents["CB-2025-0006_product_listing.pdf"]
@@ -435,6 +463,24 @@ def _found(
             ExtractionCandidateValue(
                 raw_value=raw_value,
                 references=(reference,),
+            ),
+        ),
+        confidence=0.99,
+    )
+
+
+def _found_with_references(
+    fact_name: str,
+    raw_value: object,
+    references: tuple[ExtractionEvidenceReference, ...],
+) -> ExtractionCandidate:
+    return ExtractionCandidate(
+        fact_name=fact_name,
+        status="FOUND",
+        values=(
+            ExtractionCandidateValue(
+                raw_value=raw_value,
+                references=references,
             ),
         ),
         confidence=0.99,

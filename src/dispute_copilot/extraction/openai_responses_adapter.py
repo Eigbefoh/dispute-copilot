@@ -56,7 +56,7 @@ from dispute_copilot.extraction.vision_prompt import (
 from dispute_copilot.policy.fact_models import FactDefinition
 
 ADAPTER_NAME = "openai_responses"
-PROMPT_VERSION = "lean-evidence-extraction/0.5.0"
+PROMPT_VERSION = "lean-evidence-extraction/0.6.0"
 RESPONSE_SCHEMA_VERSION = "extraction-response/0.4.0"
 
 

@@ -56,6 +56,14 @@ Evidence rules:
   supporting_text.
 - For TEXT evidence, supporting_text must be copied exclusively and verbatim
   from the supplied page's canonical_text field.
+- Each supporting_text must be one contiguous substring from one canonical_text
+  page. Do not join separate lines, list items, table cells, or structured
+  observations by inserting commas, semicolons, conjunctions, labels,
+  ellipses, or any other characters.
+- When one fact value is supported by two or more non-contiguous passages,
+  create a separate TEXT reference for every passage, in source order. Multiple
+  references may support one value; every reference must independently occur
+  verbatim in its referenced canonical_text page.
 - Do not independently transcribe text from image pixels, paraphrase it,
   correct it, or synthesize a quotation. If visible writing is absent from
   canonical_text, do not cite that writing as TEXT evidence.
@@ -96,6 +104,36 @@ Valid VISUAL reference example:
   "extraction_method": "VISION",
   "visual_observation": "A front-facing sage armchair-like object is visible."
 }
+
+Valid non-contiguous TEXT support for one value:
+{
+  "raw_value": "First product; Second product",
+  "references": [
+    {
+      "evidence_type": "TEXT",
+      "document_id": "00000000-0000-0000-0000-000000000000",
+      "file_name": "invoice.pdf",
+      "page_number": 1,
+      "extraction_method": "NATIVE_TEXT",
+      "supporting_text": "First product"
+    },
+    {
+      "evidence_type": "TEXT",
+      "document_id": "00000000-0000-0000-0000-000000000000",
+      "file_name": "invoice.pdf",
+      "page_number": 1,
+      "extraction_method": "NATIVE_TEXT",
+      "supporting_text": "Second product"
+    }
+  ]
+}
+
+Invalid synthesized quotation:
+{
+  "supporting_text": "First product, Second product"
+}
+The comma-joined text is invalid unless that exact contiguous string occurs in
+canonical_text. Use the two separate references shown above instead.
 
 Prohibited conclusions:
 - Do not decide whether Visa 13.3 or any requirement is satisfied.

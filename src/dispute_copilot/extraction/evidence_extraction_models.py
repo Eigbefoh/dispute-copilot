@@ -53,9 +53,11 @@ class TextExtractionEvidenceReference(
     supporting_text: str = Field(
         min_length=1,
         description=(
-            "Verbatim substring copied exclusively from the referenced "
-            "page's supplied canonical_text; never independently "
-            "transcribed from pixels, paraphrased, or corrected."
+            "One verbatim, contiguous substring copied exclusively from "
+            "the referenced page's supplied canonical_text; never "
+            "independently transcribed from pixels, paraphrased, "
+            "corrected, or joined with a separate passage. Use multiple "
+            "references when one value needs non-contiguous support."
         ),
     )
 

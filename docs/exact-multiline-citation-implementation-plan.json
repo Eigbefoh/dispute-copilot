@@ -1,0 +1,344 @@
+{
+  "plan_metadata": {
+    "plan_id": "exact-multiline-citation-v1",
+    "title": "Exact Non-Contiguous Citation Guidance and Regression Proof",
+    "version": "1.0.0",
+    "created_at": "2026-08-03",
+    "status": "LIVE_QUALIFICATION_COMPLETE_FURTHER_DESIGN_REQUIRED",
+    "implementation_authorized": true,
+    "live_provider_execution_authorized": true,
+    "current_checkpoint": "G1_COMPLETE_P4_MIXED_RESULT",
+    "target_branch": "agent/live-extraction-validation-baseline",
+    "baseline_commit": "0dc21e3",
+    "baseline_test_result": {
+      "passed": 351,
+      "failed": 0,
+      "skipped": 1,
+      "skipped_scope": "Explicitly gated live-provider integration test"
+    },
+    "offline_implementation_result": {
+      "completed_at": "2026-08-03",
+      "live_provider_calls_performed": false,
+      "focused_test_result": {
+        "passed": 56,
+        "failed": 0,
+        "scope": "Evidence extraction, provider runtime, and take-home-v4 case behaviour"
+      },
+      "ordinary_test_result": {
+        "passed": 354,
+        "failed": 0,
+        "skipped": 1,
+        "skipped_scope": "Explicitly gated live-provider integration test"
+      },
+      "prompt_version": "lean-evidence-extraction/0.6.0",
+      "validator_changed": false,
+      "historical_databases_modified": false
+    },
+    "live_qualification_result": {
+      "completed_at": "2026-08-03",
+      "database": "data/exact-citation-qualification-20260803.db",
+      "database_sha256": "4f0e5c995253f09e1a701ba1853439391cc590ae26362a8ddfa7e163ee3bfd25",
+      "provider": "nebius",
+      "model": "Qwen/Qwen2.5-VL-72B-Instruct",
+      "prompt_version": "lean-evidence-extraction/0.6.0",
+      "CB-2025-0005": {
+        "status": "COMPLETED",
+        "selection_id": "08866a90-ab0a-40da-a7ac-2a31b0467e83",
+        "resolution_id": "a7b47567-cabd-4eb1-a54e-4cb9a19598ff",
+        "review_package_id": "678647c1-32a8-4775-b00a-6d45febccaef",
+        "recommendation": "RECOMMEND_REPRESENT",
+        "separate_exact_references_verified": true,
+        "cached_reopening_verified": true
+      },
+      "CB-2025-0002": {
+        "status": "FAILED_CLOSED",
+        "selection_id": "0214bfdc-31de-40e2-afb4-0436c58a9634",
+        "failure_type": "EvidenceCandidateProvenanceError",
+        "failure_summary": "The model repeated a single synthesized quotation by concatenating separate structured image-text observations; no FactResolutionResult was admitted.",
+        "resolution_records_admitted": 0,
+        "next_design_boundary": "A separately reviewed citation-ID or enumerated-span contract is required if prompt-only compliance is insufficient."
+      },
+      "post_live_test_result": {
+        "passed": 354,
+        "failed": 0,
+        "skipped": 1
+      },
+      "historical_baseline_hashes_unchanged": true
+    }
+  },
+  "confirmed_diagnostics": [
+    {
+      "case_id": "CB-2025-0005",
+      "stage": "FACT_RESOLUTION",
+      "failure_type": "EvidenceCandidateProvenanceError",
+      "candidate_path": "candidates.2.values.0.references.0",
+      "document": "CB-2025-0005_invoice_order_A.pdf",
+      "page": 1,
+      "canonical_passages": [
+        "Single Origin Ethiopia Yirgacheffe 250g",
+        "House Espresso Blend 1kg"
+      ],
+      "rejected_supporting_text": "Single Origin Ethiopia Yirgacheffe 250g, House Espresso Blend 1kg",
+      "root_cause": "The model combined two separately occurring passages and inserted punctuation that does not occur in the canonical page text."
+    },
+    {
+      "case_id": "CB-2025-0002",
+      "stage": "FACT_RESOLUTION",
+      "failure_type": "EvidenceCandidateProvenanceError",
+      "candidate_path": "candidates.3.values.0.references.0",
+      "document": "CB-2025-0002_tracking_screenshot.png",
+      "page": 1,
+      "root_cause": "The model concatenated separate structured written-text observations into one quotation instead of returning separate exact references."
+    }
+  ],
+  "objective": {
+    "primary": "Make the provider-facing contract explicitly require one contiguous canonical passage per TEXT reference and require multiple references when one fact value depends on separate passages.",
+    "success_path": [
+      "Canonical evidence page text",
+      "Provider extracts one policy-requested fact value",
+      "Provider supplies one exact TEXT reference per contiguous passage",
+      "Multiple non-contiguous passages remain separate references",
+      "Existing exact deterministic citation validation succeeds",
+      "Existing immutable fact admission and deterministic downstream pipeline continue unchanged"
+    ]
+  },
+  "scope": {
+    "included": [
+      "Strengthen the shared provider-neutral extraction instructions.",
+      "Strengthen the provider-facing supporting_text JSON Schema description.",
+      "Add examples for one value supported by two non-contiguous TEXT references.",
+      "Bump the shared fact-extraction prompt version consistently for Nebius, OpenAI, and Anthropic.",
+      "Add focused unit, provider-contract, and Case 0005/0002 regression tests.",
+      "Run an isolated live Nebius qualification only after separate approval."
+    ],
+    "excluded": [
+      "Fuzzy citation matching.",
+      "Ignoring punctuation differences.",
+      "Automatically splitting or repairing invalid provider quotations.",
+      "Partial fact admission.",
+      "Changing policy facts, predicates, evaluations, recommendations, or analyst UI behaviour.",
+      "Changing the image observation channels or weakening visual limitations.",
+      "Provider fallback, retries across providers, or model substitution.",
+      "Rewriting historical EvidenceDocuments, FactResolutionResults, or review packages.",
+      "Database migrations."
+    ]
+  },
+  "non_negotiable_invariants": [
+    "supporting_text must remain a verbatim substring of the referenced canonical page after only the existing shared Unicode and whitespace normalization.",
+    "One TEXT reference may identify only one contiguous source passage.",
+    "A model must not join separate lines, list items, table cells, or observations by inserting commas, conjunctions, labels, or other punctuation.",
+    "When one fact value depends on multiple non-contiguous passages, the value must contain multiple TEXT references in source order.",
+    "Each separate reference must independently pass the existing document, page, extraction-method, and exact-text validation.",
+    "The raw fact value may summarize the supported concept, but its provenance quotations may not be synthesized.",
+    "Any invalid reference rejects the complete candidate response and produces no FactResolutionResult.",
+    "Missing evidence remains NOT_FOUND and never becomes evidence of the opposite.",
+    "All providers encounter the same canonical schema and deterministic admission boundary.",
+    "Credentials and raw evidence content remain absent from normal logs and persisted errors."
+  ],
+  "provider_facing_contract_change": {
+    "instruction_additions": [
+      "Define supporting_text as exactly one contiguous substring copied from canonical_text.",
+      "Explicitly prohibit concatenating separate passages even when they appear on the same page.",
+      "Explicitly prohibit inserting commas, semicolons, conjunctions, labels, or ellipses between source passages.",
+      "Require a separate TEXT reference for each non-contiguous supporting passage.",
+      "Explain that multiple references may support one resolved value.",
+      "Include the Case 0005 pattern as a generic shape-only example without case IDs or production special-casing."
+    ],
+    "valid_shape_example": {
+      "raw_value": "Single Origin Ethiopia Yirgacheffe 250g; House Espresso Blend 1kg",
+      "references": [
+        {
+          "evidence_type": "TEXT",
+          "supporting_text": "Single Origin Ethiopia Yirgacheffe 250g"
+        },
+        {
+          "evidence_type": "TEXT",
+          "supporting_text": "House Espresso Blend 1kg"
+        }
+      ]
+    },
+    "invalid_shape_example": {
+      "supporting_text": "Single Origin Ethiopia Yirgacheffe 250g, House Espresso Blend 1kg",
+      "reason": "This inserts a comma and combines two separately occurring passages."
+    },
+    "schema_description": "Verbatim, contiguous substring copied exclusively from one referenced page's canonical_text. Never combine separate passages or add punctuation. Use multiple references for non-contiguous support.",
+    "prompt_version_change": {
+      "from": "lean-evidence-extraction/0.5.0",
+      "to": "lean-evidence-extraction/0.6.0",
+      "reason": "Execution lineage and cache identity must show that the provider received materially stronger citation instructions."
+    }
+  },
+  "file_change_plan": [
+    {
+      "path": "src/dispute_copilot/extraction/openai_adapter_common.py",
+      "change": "Add the contiguous-passage rule, non-contiguous multi-reference rule, prohibited concatenation language, and valid/invalid shape examples to the shared instructions."
+    },
+    {
+      "path": "src/dispute_copilot/extraction/evidence_extraction_models.py",
+      "change": "Strengthen the supporting_text field description so all provider-generated JSON Schemas carry the same contiguous-source rule."
+    },
+    {
+      "path": "src/dispute_copilot/extraction/openai_chat_completions_adapter.py",
+      "change": "Bump only the recorded fact-extraction prompt version; do not alter transport or parsing."
+    },
+    {
+      "path": "src/dispute_copilot/extraction/openai_responses_adapter.py",
+      "change": "Bump the same fact-extraction prompt version; preserve native OpenAI transport."
+    },
+    {
+      "path": "src/dispute_copilot/extraction/anthropic_messages_adapter.py",
+      "change": "Bump the same fact-extraction prompt version; preserve native Anthropic transport."
+    },
+    {
+      "path": "tests/test_evidence_extraction.py",
+      "change": "Assert the shared instructions and schema description contain the contiguous-passage and multiple-reference rules."
+    },
+    {
+      "path": "tests/test_lean_fact_resolution.py",
+      "change": "Add provider-neutral admission tests proving two exact references are accepted while one synthesized combined quotation is rejected with the existing diagnostic."
+    },
+    {
+      "path": "tests/test_provider_runtime.py",
+      "change": "Assert all three provider identities record prompt version 0.6.0 without changing adapters or parameters."
+    },
+    {
+      "path": "tests/test_v4_case_behaviour.py",
+      "change": "Add or extend fixture-backed Case 0005 and Case 0002 regression coverage without case-ID-specific production logic."
+    }
+  ],
+  "implementation_sequence": [
+    {
+      "phase_id": "P0",
+      "name": "Safe checkpoint",
+      "tasks": [
+        "Record branch, HEAD, and worktree state.",
+        "Preserve all modified and untracked live databases.",
+        "Run the ordinary suite and stop if it is not green.",
+        "Record protected baseline database checksums."
+      ]
+    },
+    {
+      "phase_id": "P1",
+      "name": "Provider-neutral contract clarification",
+      "tasks": [
+        "Update shared extraction instructions.",
+        "Update supporting_text schema description.",
+        "Add valid and invalid non-contiguous citation examples.",
+        "Bump the shared fact prompt version across all three adapters."
+      ]
+    },
+    {
+      "phase_id": "P2",
+      "name": "Deterministic regression tests",
+      "tasks": [
+        "Prove separate exact references for one value are admitted.",
+        "Prove a synthesized combined quotation is rejected.",
+        "Prove no automatic splitting, repair, or punctuation tolerance occurs.",
+        "Prove provider adapters retain their existing transport and canonical response shape.",
+        "Prove Case 0005 and Case 0002 fixtures retain exact provenance."
+      ]
+    },
+    {
+      "phase_id": "P3",
+      "name": "Offline regression checkpoint",
+      "tasks": [
+        "Run focused extraction and provider-contract tests.",
+        "Run the complete ordinary test suite.",
+        "Confirm historical database hashes remain unchanged."
+      ]
+    },
+    {
+      "phase_id": "P4",
+      "name": "Optional live qualification",
+      "authorization": "Requires separate explicit approval because it transmits evidence and may incur provider cost.",
+      "tasks": [
+        "Use a new isolated database.",
+        "Run CB-2025-0005 with the configured Nebius model.",
+        "Run CB-2025-0002 with the configured Nebius model.",
+        "Confirm successful citations use separate exact references for non-contiguous passages.",
+        "If the provider still violates the contract, retain fail-closed behaviour and report the exact bounded diagnostic rather than weakening validation."
+      ]
+    }
+  ],
+  "test_plan": {
+    "prompt_and_schema": [
+      "The prompt states that supporting_text is one contiguous canonical substring.",
+      "The prompt prohibits inserted punctuation and joined passages.",
+      "The prompt demonstrates multiple references supporting one value.",
+      "The generated provider schema exposes the same rule in the supporting_text description."
+    ],
+    "admission": [
+      "Two exact same-page TEXT references supporting one value are accepted in source order.",
+      "Two exact cross-page references supporting one value are accepted when both pages belong to admitted documents.",
+      "A comma-joined quotation that does not occur canonically is rejected.",
+      "A conjunction-joined quotation is rejected.",
+      "A punctuation-corrected or paraphrased quotation is rejected.",
+      "One invalid reference among several rejects the complete candidate response.",
+      "No failed candidate creates a FactResolutionResult."
+    ],
+    "provider_parity": [
+      "Nebius, OpenAI, and Anthropic receive the revised shared instructions.",
+      "All three expose the same canonical reference schema.",
+      "Nebius remains Chat Completions, OpenAI remains Responses, and Anthropic remains Messages.",
+      "No fallback, retry, or provider substitution is added."
+    ],
+    "case_regression": [
+      "Case 0005 represents its two invoice line items with separately grounded references.",
+      "Case 0002 represents a multi-line delivery address with separately grounded references when the canonical representation contains separate observations.",
+      "Case 0006 preserves its written-text, visible-pixel, and limitation boundaries."
+    ]
+  },
+  "acceptance_criteria": [
+    "The exact citation validator and normalization implementation are unchanged.",
+    "The provider contract explicitly distinguishes one fact value from one or more supporting source passages.",
+    "Non-contiguous evidence is represented by multiple exact references, never a synthesized quotation.",
+    "The Case 0005 comma-joined failure is covered by a deterministic regression test.",
+    "The Case 0002 structured-image citation pattern is covered by a deterministic regression test.",
+    "The complete ordinary suite passes.",
+    "Historical policies, databases, results, recommendations, and review packages remain unchanged.",
+    "Any live provider violation continues to fail closed with no partial admission."
+  ],
+  "risks_and_controls": [
+    {
+      "risk": "A live model may ignore the clarified instructions.",
+      "control": "Keep deterministic rejection unchanged. Do not repair output. Report the precise error and consider a separately reviewed citation-ID design only if live qualification remains unreliable."
+    },
+    {
+      "risk": "Changing the shared prompt could alter outputs from all providers.",
+      "control": "Limit the change to provenance formatting, bump the prompt version, run shared contract tests, and preserve every downstream validator."
+    },
+    {
+      "risk": "Multiple references could be misused to hide conflicting values.",
+      "control": "Retain existing fact cardinality, distinct-value, status, and provenance validation; references support one value but do not merge distinct values."
+    },
+    {
+      "risk": "Existing successful resolutions could be recomputed under the new prompt.",
+      "control": "Keep immutable persisted results idempotent. Only unresolved selections or new runs invoke the revised prompt."
+    }
+  ],
+  "rollback_plan": {
+    "code": "Revert the shared prompt/schema-description changes and prompt-version bump as one isolated commit.",
+    "data": "No migration rollback is required; live qualification uses a new disposable database.",
+    "behaviour": "The existing strict validator remains in place before, during, and after rollback."
+  },
+  "approval_gates": [
+    {
+      "gate_id": "G0",
+      "name": "Offline implementation approval",
+      "status": "APPROVED_COMPLETE",
+      "authorizes": "P0 through P3 only."
+    },
+    {
+      "gate_id": "G1",
+      "name": "Live Nebius qualification approval",
+      "status": "APPROVED_COMPLETE",
+      "authorizes": "P4 only after the offline suite passes."
+    },
+    {
+      "gate_id": "G2",
+      "name": "Documentation and Git checkpoint approval",
+      "status": "PENDING",
+      "authorizes": "Documentation status updates and commit after qualification results are reported."
+    }
+  ]
+}
