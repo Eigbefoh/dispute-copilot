@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "A traceable payment-dispute evaluation pipeline."
 readme = "README.md"
 requires-python = ">=3.11"
-license = { text = "Proprietary" }
+license = "MIT"
 authors = [
     { name = "Dispute Copilot contributors" },
 ]
