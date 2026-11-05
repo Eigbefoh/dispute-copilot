@@ -5,6 +5,8 @@ traceable, policy-grounded recommendation for an analyst. It combines
 model-assisted evidence extraction with deterministic policy evaluation,
 immutable lineage, and a local Gradio review interface.
 
+![Analyst review screen](docs/images/analyst-review.png)
+
 `take-home-v4` is the default rulebook. Recommendations are advisory: the
 application does not submit a chargeback response or take any external dispute
 action.
@@ -166,7 +168,7 @@ dispute-copilot/
 Python 3.11 or newer is required.
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/Eigbefoh/dispute-copilot.git
 cd dispute-copilot
 
 python3 -m venv .venv
@@ -343,3 +345,8 @@ satisfy the live extraction contract. These are different claims.
 - [human-review UI guide](docs/human-review-ui.md)
 - [ten-case behavioural acceptance matrix](docs/ten-case-behavioural-acceptance-matrix.md)
 - [v4 fixture-backed acceptance report](docs/take-home-v4-fixture-acceptance-report.md)
+
+## Licence
+
+Copyright © 2026 Victor Eigbefoh. All rights reserved. The code is
+shared publicly for viewing and evaluation only; see [LICENSE](LICENSE).
