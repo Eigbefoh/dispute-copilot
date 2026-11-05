@@ -348,4 +348,5 @@ satisfy the live extraction contract. These are different claims.
 
 ## Licence
 
-Released under the [MIT Licence](LICENSE).
+Copyright © 2026 Victor Eigbefoh. All rights reserved. The code is
+shared publicly for viewing and evaluation only; see [LICENSE](LICENSE).
